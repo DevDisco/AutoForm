@@ -1,0 +1,6 @@
+{
+  "component": "switches",
+  "type": "checkbox",
+  "options": ["blue", "green", "red", "yellow"],
+  "label": "My Label!"
+}

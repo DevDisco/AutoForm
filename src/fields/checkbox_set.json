@@ -1,0 +1,5 @@
+{
+  "component": "checkbox",
+  "type": "checkbox",
+  "options": ["blue", "green", "red", "yellow"]
+}

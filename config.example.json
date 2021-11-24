@@ -1,0 +1,13 @@
+{
+  "DB_USER": "myUser",
+  "DB_PWD": "myPwd",
+  "DB_DSN": "mysql:host=localhost;port=3306;dbname=myDB",
+  "TABLE": "myTable",
+  "FORM_TITLE": "Autoform",
+  "INSTRUCTIONS_TEXT": "Text, no more than {{?}} characters",
+  "INSTRUCTIONS_NUMBER": "Integer, not larger than {{?}}",
+  "INSTRUCTIONS_EMAIL": "A valid emailaddress",
+  "INSTRUCTIONS_URL": "A URL, including http(s)://",
+  "INSTRUCTIONS_PASSWORD": "A password like ....",
+  "INSTRUCTIONS_CHOICE": "Pick an option"
+}

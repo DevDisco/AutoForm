@@ -1,0 +1,5 @@
+{
+  "component": "radio",
+  "type": "radio",
+  "options": ["blue", "green", "red", "yellow"]
+}
