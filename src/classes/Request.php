@@ -4,6 +4,7 @@ class Request
 {
     private $fieldList = [];
     private $cleanPost = [];
+    private $cleanGet = [];
 
     public function __construct(private AutoForm $form, public SimpleError $error)
     {
@@ -11,28 +12,41 @@ class Request
         $this->fieldList = $form->getFieldList();
     }
 
+    /**
+     * Returns TRUE if all values in POST are validated,
+     * Filters fields (including errored) and puts them in the cleanPost array
+     */
     public function validatePost(): bool
     {
-        foreach ($this->fieldList as $field) {
-
-            if ($this->validateInput($field)) {
-                
-                $this->cleanPost[$field['name']] = $this->sanitizeInput($field);
-            }
-            else{
-                
-                return FALSE;
-            }
-        }
+        $succes = TRUE;
         
-        return TRUE;
+        foreach ($this->fieldList as $field) {
+            
+            // if (!$this->validateInput($field)) {
+
+            //     $succes = FALSE;
+            // }
+
+            $succes = !$this->validateInput($field) ? FALSE : $succes;
+
+            $this->cleanPost[$field['name']] = $this->sanitizeInput($field);
+        }
+
+        Session::setCleanPost($this->cleanPost);
+        
+        return $succes;
     }
-    
+
     public function getCleanPost():array{
     
         return $this->cleanPost;
     }
-    
+
+    public function getCleanGet(): array
+    {
+
+        return $this->cleanGet;
+    }    
     private function sanitizeInput(array $fieldArray): mixed{
 
         extract($fieldArray);
@@ -42,7 +56,7 @@ class Request
         
         if (is_array($postValue)) {
 
-            $postValue = implode(",", $postValue);
+            $postValue = implode("|", $postValue);
         }
         
         $filter = match ($type) {
@@ -73,7 +87,7 @@ class Request
         
         if ( is_array($postValue ) ){
 
-            $postValue = implode(",", $postValue);
+            $postValue = implode("|", $postValue);
             $type = "text";
         }
 
@@ -83,7 +97,7 @@ class Request
             return FALSE;
         }
 
-        if ($maxlength && strlen($postValue) > $maxlength) {
+        if (isset($maxlength) && strlen($postValue) > $maxlength) {
 
             $this->error->setError("Sorry, '" . $name . "' cannot be longer than " . $maxlength . " characters. The given '". $postValue."' contains ".strlen($postValue)." characters.");
             return FALSE;
@@ -102,5 +116,41 @@ class Request
         }
 
         return TRUE;
+    }
+
+    /**
+     * Returns the table name from a GET or POST request as a string
+     * Returns FALSE if no valid table name is found
+     * A table name must be lowercase alphanumeric and may include underscores
+     * It can't start with a number and can't end with an underscore.
+     */
+    public static function getTable(): string|bool
+    {
+
+        //NB: $this->isValidTable($_GET['t'] ?? FALSE is a shortcut for a check on isset()
+        if ($_SERVER['REQUEST_METHOD'] === "GET" && self::isValidTable($_GET['t'] ?? FALSE)) {
+
+            return $_GET['t'];
+        } else if ($_SERVER['REQUEST_METHOD'] === "POST" && self::isValidTable($_POST['t'] ?? FALSE)) {
+
+            return $_POST['t'];
+        }
+
+        return FALSE;
+    }
+
+    /**
+     * Helper function for getTable
+     */
+    private static function isValidTable(string|bool $table): bool
+    {
+        //only accept lowercase characters, numbers and underscore
+        //tablename can't start with a number or end with an underscore
+        if (preg_match("/^[a-z_][A-Za-z0-9_]+[a-z0-9]$/", $table) && $table !== FALSE) {
+
+            return TRUE;
+        }
+
+        return FALSE;
     }
 }

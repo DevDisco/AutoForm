@@ -19,7 +19,6 @@ class SimpleError
      */
     public function setError(string $message, int $httpError = 0): void
     {
-
         $this->trace = debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT, 1);
         $this->message = $message;
         $this->httpError  = $httpError;
@@ -31,7 +30,11 @@ class SimpleError
      */
     public function printError(bool $debug=FALSE): void
     {
-
+        if ( !$debug ){
+            
+            return;
+        }
+        
         if ($this->httpError > 0) {
 
             print $this->httpError . " - ";
@@ -42,7 +45,7 @@ class SimpleError
             print $this->message;
         }
 
-        if (!empty($this->trace) && $debug) {
+        if (!empty($this->trace) ) {
 
             print " [".$this->trace[0]['file']." (". $this->trace[0]['line'].")]";
         }

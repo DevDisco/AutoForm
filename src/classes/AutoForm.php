@@ -4,18 +4,16 @@ class AutoForm
 {
 
     public function __construct(
-        private Database $database,
-        public bool|array $table = FALSE,
-        private array $fieldList = []
+        private Database $database
     ) {
 
         //show form
-        $this->table = $database->showTable($this->database->config->TABLE);
+        $table = $this->database->config->getCurrentTable();
+        $this->tableData = $database->showTable($table);
 
         //Logger::toLog($this->table, "table");
 
         $this->createFieldList();
-        $this->createForm();
     }
 
     public function getFieldList()
@@ -46,7 +44,13 @@ class AutoForm
             $inputs .= $input;
         }
 
+        $table = $this->database->config->getCurrentTable();
+        $form = str_replace("{{table}}", $table, $form);
         $form = str_replace("{{inputs}}", $inputs, $form);
+
+        Session::setCurrentTable($table);
+        //Session::unsetCleanForm();
+
         return $form;
     }
 
@@ -79,23 +83,56 @@ class AutoForm
         $input =  preg_replace("/\s?{{[^}]*}}/", "", $input);
 
         //remove unused max and maxvalue to comply with html5 standards
-        $input = str_replace(" maxlength=\"\"","",$input);
+        $input = str_replace(" maxlength=\"\"", "", $input);
         $input = str_replace(" max=\"\"", "", $input);
 
         return $input;
+    }
+
+    private function getPresetValue(array $field): string
+    {
+
+        $value = $field['value'] ?? "";
+
+        $prefill = Session::getCleanPost()[$field['name']] ?? FALSE;
+
+        //Logger::toLog(Session::getCleanPost(), "getCleanPost");
+
+        if ($prefill) {
+
+            $value = $prefill;
+        }
+
+        return $value;
+    }
+
+    private function isSelected(array $field, string $option): bool
+    {
+        $prefill = Session::getCleanPost()[$field['name']] ?? FALSE;
+
+        if (strpos($prefill, "|")) {
+
+            $prefillArray = explode("|", $prefill);
+            return in_array($option, $prefillArray) ?: FALSE;
+        } else if ($prefill == $option) {
+
+            return TRUE;
+        }
+
+        return FALSE;
     }
 
     private function createSingleInput(array $field, string $input): string
     {
         $label = $this->cleanLabel($field['name'], $field);
         $input = $this->insertOptions($field, $input);
-        $value = $field['value'] ?? "";
+        $value = $this->getPresetValue($field);
 
         if ($field['required']) {
 
             $label .= " *";
         }
-        
+
         $input = str_replace("{{label}}", $label, $input);
         $input = str_replace("{{instructions}}", $this->createInstructions($field), $input);
         $input = str_replace("{{id}}", $field['name'], $input);
@@ -114,22 +151,23 @@ class AutoForm
 
         //parse input into fixed and repeated parts
         $parts = explode("[[repeat]]", $input);
-        
+
         $label = $this->cleanLabel($field['name'], $field);
         $label = $field['required'] ? ($label .= " *") : $label;
         $instructions = $this->createInstructions($field);
         $label = $parts[0] = str_replace("{{label}}", $label, $parts[0]);
 
-        foreach ($field['options'] as $key => $value) {
+        foreach ($field['options'] as $key => $option) {
 
             $id = $field['name'] . "_" . $key;
-            $label = $this->cleanLabel($value);
+            $label = $this->cleanLabel($option);
             $item = str_replace("{{id}}", $id, $parts[1]);
             $item = str_replace("{{label}}", $label, $item);
-            $item = str_replace("{{value}}", $value, $item);
+            $item = str_replace("{{value}}", $option, $item);
             $item = str_replace("{{instructions}}", $instructions, $item);
 
-            if ($field['value'] == $value) {
+            //if ($field['value'] == $option) {
+            if ($this->isSelected($field, $option)) {
 
                 $item = str_replace("{{checked}}", "checked", $item);
             }
@@ -148,7 +186,6 @@ class AutoForm
 
     private function createInstructions(array $field): string
     {
-
         $instructions = "";
         $config = $this->database->config;
 
@@ -179,7 +216,6 @@ class AutoForm
 
     private function cleanLabel(string $fieldName, array $field = []): string
     {
-
         $label = $field['label'] ?? FALSE;
 
         if (!$label) {
@@ -191,30 +227,53 @@ class AutoForm
         return $label;
     }
 
-    private function insertOptions(array|bool $fieldArray, string $input): string
+    private function insertOptions(array|bool $field, string $input): string
     {
-
         $parts = explode("[[repeat]]", $input);
-        $options = "";
+        $insert = "";
+        $options = [];
 
-        if (empty($fieldArray['options'])) {
+        //return input unaltered if the option option (duh) isn't set
+        if (empty($field['options'])) {
 
             return $input;
         }
 
-        foreach ($fieldArray['options'] as $value) {
+        if (isset($field['options']['table']) && isset($field['options']['nameColumn'])) {
 
-            $options .= str_replace("{{value}}", $value, rtrim($parts[1]));
+            $options = $this->database->getOptionsFromDb($field);
+        } else {
+
+            $options = $field['options'];
         }
 
-        return $parts[0] . $options . $parts[2];
+        Logger::toLog($options, "options");
+
+        foreach ($options as $key => $value) {
+
+            $label = $value;
+            $value = $field['options']['valueColumn'] ? $key : $value;
+            $part =  rtrim($parts[1]);
+
+            $part = str_replace("{{value}}", $value, $part);
+            $part = str_replace("{{label}}", $label, $part);
+
+            if ($this->isSelected($field, $value)) {
+
+                $part = str_replace("{{selected}}", "selected", $part);
+            }
+
+            $insert .= $part;
+        }
+
+        return $parts[0] . $insert . $parts[2];
     }
 
-    private function createFieldList()
+    private function createFieldList(): void
     {
         $fl = [];
 
-        foreach ($this->table as $key => $field) {
+        foreach ($this->tableData as $key => $field) {
 
             //ignore autoincrementing primary keys 
             if ($field['Field'] === "id" || ($field['Key'] === "PRI" && strpos($field['Extra'], "auto_increment") !== FALSE)) {
@@ -257,7 +316,8 @@ class AutoForm
             $fl[$key]['required'] = ($field['Null'] === "NO") ? TRUE : FALSE;
 
             //override or expand with custom field settings
-            $optionsFile = "../src/fields/" . $field['Field'] . ".json";
+            $table = $this->database->config->getCurrentTable();
+            $optionsFile = "../src/customfields/$table/" . $field['Field'] . ".json";
 
             if (is_file($optionsFile)) {
 
@@ -272,7 +332,6 @@ class AutoForm
 
     private function getAttributeMaxValue(array $typeArray): int|bool
     {
-
         $isSigned = $typeArray[2];
         $max = FALSE;
 
@@ -312,7 +371,6 @@ class AutoForm
 
     private function getInputType(array $typeArray): string|bool
     {
-
         if ($typeArray === FALSE) {
 
             return FALSE;
@@ -332,11 +390,8 @@ class AutoForm
         return $type;
     }
 
-
-
-    private function parseSqlType($sqlType)
+    private function parseSqlType($sqlType): array
     {
-
         //text types have no length value
         $typeArray = match ($sqlType) {
 
@@ -365,8 +420,6 @@ class AutoForm
 
         //I just want to check if a field is signed or not
         $typeArray[2] = ($typeArray[2] === "unsigned") ? FALSE : TRUE;
-
-
 
         //todo: checks
         return $typeArray;

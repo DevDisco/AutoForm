@@ -2,7 +2,7 @@
   "DB_USER": "myUser",
   "DB_PWD": "myPwd",
   "DB_DSN": "mysql:host=localhost;port=3306;dbname=myDB",
-  "TABLE": "myTable",
+  "TABLE": { "myTable": "A descriptive label" },
   "FORM_TITLE": "Autoform",
   "INSTRUCTIONS_TEXT": "Text, no more than {{?}} characters",
   "INSTRUCTIONS_NUMBER": "Integer, not larger than {{?}}",

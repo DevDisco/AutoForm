@@ -22,7 +22,7 @@ class Database
         $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     }
     
-    public function runSQL( string $sql, array|bool $params=false ):array{
+    public function runSQL( string $sql, array|bool $params=false, $fetchMode= PDO::FETCH_ASSOC ):array{
 
         if ($params === FALSE) {
 
@@ -38,20 +38,20 @@ class Database
             return $this->pdo->errorInfo();
         }
         else{
-            return $stmt->fetchAll(PDO::FETCH_ASSOC); 
+            return $stmt->fetchAll($fetchMode); 
         }
               
     }
     
-    public function showTable( string $table ):array|bool{
+    public function showTable():array|bool{
 
-        return $this->runSQL("SHOW FULL COLUMNS FROM ".$this->config->TABLE);
+        return $this->runSQL("SHOW FULL COLUMNS FROM ".$this->config->getCurrentTable());
     }
     
-    public function insertAutoForm( array $cleanPost ):array{
+    public function insertAutoForm( array $cleanPost ):bool{
 
         
-        $table = $this->config->TABLE;
+        $table = $this->config->getCurrentTable();
     
         $keys = array_keys($cleanPost);
         $columnNames = implode(",", $keys);
@@ -62,9 +62,33 @@ class Database
         Logger::toLog($sql);
 
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute($cleanPost);
         
-        //return $this->runSQL( $sql, $cleanPost );
-        return [];
+        return $stmt->execute($cleanPost);
+    }
+    
+    public function getOptionsFromDb(array $field ):array|bool{
+
+        $table = $field['options']['table'];
+        $name = $field['options']['nameColumn'];
+        $value = $field['options']['valueColumn'] ?? FALSE;
+        
+        if ($value ){
+            
+            $sql = "SELECT $value, $name FROM $table LIMIT 100";
+            $options = $this->runSQL($sql, FALSE, PDO::FETCH_KEY_PAIR);   
+        }
+        else{
+
+            $sql = "SELECT $name FROM $table LIMIT 100";
+            $options = $this->runSQL($sql, FALSE, PDO::FETCH_COLUMN);
+        }
+        
+        if (is_array($options)){
+            
+            return $options;
+        }
+        else{
+            return FALSE;
+        }
     }
 }

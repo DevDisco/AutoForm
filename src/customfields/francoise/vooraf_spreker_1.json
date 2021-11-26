@@ -1,5 +1,5 @@
 {
-  "input": "select",
+  "component": "select",
   "options": [
     "-",
     "Yolanda",
