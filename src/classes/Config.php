@@ -9,7 +9,7 @@ class Config{
     public function __construct( private string $currentTable=""){
 
         $configFile = file_get_contents("../config.json");
-        $json = json_decode($configFile, TRUE);
+        $json = json_decode($configFile, true);
 
         //store the contents of the config file on this object
         foreach ($json as $key => $value) {

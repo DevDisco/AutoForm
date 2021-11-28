@@ -24,7 +24,7 @@ class Logger
         $GLOBALS['logger'][] = [$description=>$var, 'trace'=> $backtrace];
     }
 
-    static function printLog(bool $debug = TRUE): void
+    static function printLog(bool $debug = true): void
     {
         
         if(!isset($GLOBALS['logger']) || !$debug){

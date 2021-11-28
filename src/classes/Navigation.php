@@ -2,13 +2,13 @@
 
 class Navigation{
 
-    public function __construct( private Config $config, private bool $hasTables=FALSE ){
+    public function __construct( private Config $config, private bool $hasTables=false ){
 
         $this->table = $config->TABLE;
         
         if ( is_array($this->table) && count($this->table)> 1){
             
-            $this->hasTables = TRUE;
+            $this->hasTables = true;
         }
     }
 

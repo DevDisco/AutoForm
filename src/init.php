@@ -1,5 +1,7 @@
 <?php
 
+const DEBUG = true;
+
 //A simple autoloader that grabs everything in /classes/, no need for composer
 $classFolder = "../src/classes/";
 

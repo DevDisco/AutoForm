@@ -18,95 +18,122 @@ class Database
         $user = $config->DB_USER ?? '';
         $pwd = $config->DB_PWD ?? '';
 
-        $this->pdo = new PDO($dsn, $user, $pwd);
-        $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        try {
+            $this->pdo = new PDO($dsn, $user, $pwd);
+            $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        } catch (PDOException $th) {
+            Logger::toLog($th->getMessage());
+            $error->setError("Database: connection failed.");
+            $error->showAndAbort();
+        }
     }
     
-    public function runSQL( string $sql, array|bool $params=false, $fetchMode= PDO::FETCH_ASSOC ):array{
-
-        if ($params === FALSE) {
-
-            $stmt = $this->pdo->query($sql);
-            
-        } else {
-
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->execute([$params]);
-        } 
-        
-        if ($stmt === FALSE ){
-            return $this->pdo->errorInfo();
-        }
-        else{
+    public function read(string $sql, array $params = [], int $fetchMode = PDO::FETCH_ASSOC ): bool|array{
+    
+        $stmt = $this->prepareExecute($sql, $params );
+         
+        try {
             return $stmt->fetchAll($fetchMode); 
+        } catch (\PDOException $th) {
+            Logger::toLog($th->getMessage());
+            $this->error->setError("Database: fetch query failed.", $th->getCode());
+            $this->error->showAndAbort();
+        }        
+    }
+
+
+    public function write(string $sql, array $params = []): bool
+    {
+        return $this->prepareExecute($sql, $params);
+    }
+
+
+    private function prepareExecute(string $sql, array $params = []): PDOStatement|bool
+    {
+
+        try {
+            $stmt = $this->pdo->prepare($sql);
+        } catch (\PDOException $th) {
+            Logger::toLog($th->getMessage());
+            $this->error->setError("Database: prepare query failed.", $th->getCode() );
+            $this->error->showAndAbort();
         }
-              
-    }
-    
-    public function showTable():array|bool{
 
-        return $this->runSQL("SHOW FULL COLUMNS FROM ".$this->config->getCurrentTable());
-    }
-    
-    public function insertAutoForm( array $cleanPost, array $fieldList ):bool{
-
+        try {
+            $stmt->execute($params);
+        } catch (\PDOException $th) {
+            Logger::toLog($th->getMessage());
+            $this->error->setError("Database: execute query failed.", $th->getCode());
+            $this->error->showAndAbort();
+        }
         
+        return $stmt;
+    }
+
+    public function showTable(): array|bool
+    {
+        return $this->read("SHOW FULL COLUMNS FROM " . $this->config->getCurrentTable());
+    }
+
+    public function insertAutoForm(array $cleanPost, array $fieldList): bool
+    {
+
         $table = $this->config->getCurrentTable();
-        
-        foreach ($fieldList as $field) {
-            
-            if ($field['type']==="file"){
-                
-                Logger::toLog($_FILES[$field['name']]['tmp_name'], "insertAutoForm");
-                $image_base64 = base64_encode(file_get_contents($_FILES[$field['name']]['tmp_name']));
-                $image = "data:". $_FILES[$field['name']]['type'].";base64," . $image_base64;
 
+        foreach ($fieldList as $field) {
+
+            if ($field['type'] === "file") {
+
+                //images and other files will be stored inside db
+                $image_base64 = base64_encode(file_get_contents($_FILES[$field['name']]['tmp_name']));
+                $image = "data:" . $_FILES[$field['name']]['type'] . ";base64," . $image_base64;
                 $cleanPost[$field['name']] = $image;
             }
         }
-    
+
         $keys = array_keys($cleanPost);
         $columnNames = implode(",", $keys);
         $namedParams = implode(",", array_map(fn ($attr) => ":$attr", $keys));
-        
+
         $sql = "INSERT INTO $table ($columnNames) VALUES ($namedParams)";
-        $stmt = $this->pdo->prepare($sql);
         
-        return $stmt->execute($cleanPost);
+        return $this->write($sql, $cleanPost);
+        
+        //$stmt = $this->pdo->prepare($sql);
+        //return $stmt->execute($cleanPost);
     }
-    
-    public function getOptionsFromDb(array $field ):array|bool{
+
+    public function getOptionsFromDb(array $field): array|bool
+    {
 
         $table = $field['options']['table'];
         $name = $field['options']['nameColumn'];
-        $value = $field['options']['valueColumn'] ?? FALSE;
-        
-        if ($value ){
-            
+        $value = $field['options']['valueColumn'] ?? false;
+
+        if ($value) {
+
             $sql = "SELECT $value, $name FROM $table LIMIT 100";
-            $options = $this->runSQL($sql, FALSE, PDO::FETCH_KEY_PAIR);   
-        }
-        else{
+            $options = $this->read($sql, [], PDO::FETCH_KEY_PAIR);
+        } else {
 
             $sql = "SELECT $name FROM $table LIMIT 100";
-            $options = $this->runSQL($sql, FALSE, PDO::FETCH_COLUMN);
+            $options = $this->read($sql, [], PDO::FETCH_COLUMN);
         }
-        
-        if (is_array($options)){
-            
+
+        if (is_array($options)) {
+
             return $options;
-        }
-        else{
-            return FALSE;
+        } else {
+            return false;
         }
     }
-    
-    
-    public function getImage( int $id=3 ){
 
+
+    public function getImage(int $id = 3): string
+    {
         $sql = "SELECT image_file FROM files WHERE id=3";
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute();
-        return $stmt->fetchColumn();    
+        return $stmt->fetchColumn();
     }
 }

@@ -41,15 +41,15 @@ class AutoForm
 
                 $input = $this->createSingleInput($field, $input);
             }
-            
-            if ( $field['type'] === "file"){
-            
-                 $enctype = "enctype='multipart/form-data'";
-            }        
+
+            if ($field['type'] === "file") {
+
+                $enctype = "enctype='multipart/form-data'";
+            }
 
             $inputs .= $input;
         }
-        
+
 
 
         $table = $this->database->config->getCurrentTable();
@@ -63,7 +63,7 @@ class AutoForm
         return $form;
     }
 
-    private function parseAttributes(array $field, string $input, bool $setRequired = TRUE): string
+    private function parseAttributes(array $field, string $input, bool $setRequired = true): string
     {
 
         foreach ($field as $key => $value) {
@@ -81,7 +81,6 @@ class AutoForm
 
                 $input = str_replace("{{" . $key . "}}", $value, $input);
             }
-            
         }
 
         return $input;
@@ -104,7 +103,7 @@ class AutoForm
 
         $value = $field['value'] ?? "";
 
-        $prefill = Session::getCleanPost()[$field['name']] ?? FALSE;
+        $prefill = Session::getCleanPost()[$field['name']] ?? false;
 
         //Logger::toLog(Session::getCleanPost(), "getCleanPost");
 
@@ -118,18 +117,18 @@ class AutoForm
 
     private function isSelected(array $field, string $option): bool
     {
-        $prefill = Session::getCleanPost()[$field['name']] ?? FALSE;
+        $prefill = Session::getCleanPost()[$field['name']] ?? false;
 
         if (strpos($prefill, "|")) {
 
             $prefillArray = explode("|", $prefill);
-            return in_array($option, $prefillArray) ?: FALSE;
+            return in_array($option, $prefillArray) ?: false;
         } else if ($prefill == $option) {
 
-            return TRUE;
+            return true;
         }
 
-        return FALSE;
+        return false;
     }
 
     private function createSingleInput(array $field, string $input): string
@@ -196,47 +195,56 @@ class AutoForm
 
     private function createInstructions(array $field): string
     {
+        extract($field);
         $instructions = "";
         $config = $this->database->config;
 
-        if (is_array($field['options'] ?? FALSE)) {
+        if (is_array($options ?? false)) {
 
             //selects & checkboxes
             $instructions = $config->INSTRUCTIONS_CHOICE;
-        } else if ($field['type'] === "number" && $field['max'] > 0) {
+        } else if ($type === "number" && $max > 0) {
 
-            $instructions = str_replace("{{?}}", $field['max'], $config->INSTRUCTIONS_NUMBER);
-        } else if ($field['type'] === "email") {
+            $instructions = str_replace("{{?}}", $max, $config->INSTRUCTIONS_NUMBER);
+        } else if ($type === "email") {
 
             $instructions = $config->INSTRUCTIONS_EMAIL;
-        } else if ($field['type'] === "file") {
+        } else if ($type === "file") {
 
-            //todo: write a b->kB MB function
-            $instructions = str_replace("{{?}}", round($field['maxfilesize']/1024), $config->INSTRUCTIONS_FILE);
-        } else if ($field['type'] === "url") {
+            //todo: accepted file extensions? Seems to be restricted by input already.
+            $maxFileSize = Core::getBytesAsSize($maxfilesize);
+
+            if ($component === "image") {
+                
+                $instructions = str_replace("{{?}}", $maxFileSize, $config->INSTRUCTIONS_IMAGE);
+                $instructions = str_replace("{{1}}", $width, $instructions);
+                $instructions = str_replace("{{2}}", $height, $instructions);
+            } else {
+
+                $instructions = str_replace("{{?}}", $maxFileSize, $config->INSTRUCTIONS_FILE);
+            }
+        } else if ($type === "url") {
 
             $instructions = $config->INSTRUCTIONS_URL;
-        } else if ($field['type'] === "password") {
+        } else if ($type === "password") {
 
             $instructions = $config->INSTRUCTIONS_PASSWORD;
-        } else if ($field['type'] === "text" && $field['maxlength'] > 0) {
+        } else if ($type === "text" && $maxlength > 0) {
             $instructions =
-                str_replace("{{?}}", $field['maxlength'], $config->INSTRUCTIONS_TEXT);
+                str_replace("{{?}}", $maxlength, $config->INSTRUCTIONS_TEXT);
         }
-
 
         return $instructions;
     }
 
     private function cleanLabel(string $fieldName, array $field = []): string
     {
-        $label = $field['label'] ?? FALSE;
+        $label = $field['label'] ?? false;
 
         if (!$label) {
 
             $label = ucwords(str_replace("_", " ", $fieldName));
         }
-
 
         return $label;
     }
@@ -261,12 +269,12 @@ class AutoForm
             $options = $field['options'];
         }
 
-        Logger::toLog($options, "options");
+        //Logger::toLog($options, "options");
 
         foreach ($options as $key => $value) {
 
             $label = $value;
-            $valueColumn = $field['options']['valueColumn'] ?? FALSE;
+            $valueColumn = $field['options']['valueColumn'] ?? false;
             $value = $valueColumn ? $key : $value;
             $part = rtrim($parts[1]);
 
@@ -291,7 +299,7 @@ class AutoForm
         foreach ($this->tableData as $key => $field) {
 
             //ignore autoincrementing primary keys 
-            if ($field['Field'] === "id" || ($field['Key'] === "PRI" && strpos($field['Extra'], "auto_increment") !== FALSE)) {
+            if ($field['Field'] === "id" || ($field['Key'] === "PRI" && strpos($field['Extra'], "auto_increment") !== false)) {
 
                 continue;
             }
@@ -305,7 +313,7 @@ class AutoForm
             //convert sql field info to an array that will be used to 
             //create and validate the form
             $fl[$key]['name'] = $field['Field'];
-            $fl[$key]['value'] = $field['Default'] ?? FALSE;
+            $fl[$key]['value'] = $field['Default'] ?? false;
 
             //the type field contains information about type, length and sign
             $typeArray = $this->parseSqlType($field['Type']);
@@ -323,17 +331,15 @@ class AutoForm
             //set maxima related to type
             if ($fl[$key]['type'] === 'text') {
                 $fl[$key]['maxlength'] = $typeArray[1];
-            }
-            else if ($fl[$key]['type'] === 'number') {
+            } else if ($fl[$key]['type'] === 'number') {
                 $fl[$key]['max'] = $this->getAttributeMaxValue($typeArray);
-            }
-            else if ($fl[$key]['type'] === 'file') {
+            } else if ($fl[$key]['type'] === 'file') {
                 $fl[$key]['maxfilesize'] = $this->getMaxFileSize($field['Type']);
                 $fl[$key]['component'] = "file";
             }
 
             //get required
-            $fl[$key]['required'] = ($field['Null'] === "NO") ? TRUE : FALSE;
+            $fl[$key]['required'] = ($field['Null'] === "NO") ? true : false;
 
             //override or expand with custom field settings
             $table = $this->database->config->getCurrentTable();
@@ -342,7 +348,7 @@ class AutoForm
             if (is_file($optionsFile)) {
 
                 //array_merge will overwrite keys in $fl[$key] with values in $overrideArray
-                $overrideArray = json_decode(file_get_contents($optionsFile), TRUE) ?? [];
+                $overrideArray = json_decode(file_get_contents($optionsFile), true) ?? [];
                 $fl[$key] = array_merge($fl[$key], $overrideArray);
             }
         }
@@ -353,7 +359,7 @@ class AutoForm
     private function getAttributeMaxValue(array $typeArray): int|bool
     {
         $isSigned = $typeArray[2];
-        $max = FALSE;
+        $max = false;
 
         $power = match ($typeArray[0]) {
 
@@ -362,7 +368,7 @@ class AutoForm
             "mediumint" => 24,
             "mediumint" => 32,
             "bigint" => 64,
-            default => FALSE,
+            default => false,
         };
 
         if ($power) {
@@ -391,9 +397,9 @@ class AutoForm
 
     private function getInputType(array $typeArray): string|bool
     {
-        if ($typeArray === FALSE) {
+        if ($typeArray === false) {
 
-            return FALSE;
+            return false;
         }
 
         $type = match ($typeArray[0]) {
@@ -410,20 +416,13 @@ class AutoForm
 
         return $type;
     }
-    
-    private function getSizeInBytes($string)
-    {
-        sscanf($string, '%u%c', $number, $suffix);
-        if (isset($suffix)) {
-            $number = $number * pow(1024, strpos(' KMG', strtoupper($suffix)));
-        }
-        return $number;
-    }
+
+
 
     private function getMaxFileSize(string $type): int
     {
-        $maxPostSize = $this->getSizeInBytes(ini_get('post_max_size'));
-        $maxUploadSize = $this->getSizeInBytes(ini_get('upload_max_filesize'));
+        $maxPostSize = Core::getSizeInBytes(ini_get('post_max_size'));
+        $maxUploadSize = Core::getSizeInBytes(ini_get('upload_max_filesize'));
         $maxPhpSize = ($maxUploadSize > $maxPostSize) ? $maxPostSize : $maxUploadSize;
 
         $maxSqlSize = match ($type) {
@@ -432,9 +431,9 @@ class AutoForm
             "longblob" => 4294967295,
             default => 4194304,  //4MB
         };
-        
+
         //you can't upload anything larger than the max post size
-        return ($maxSqlSize > $maxPhpSize ) ? $maxPhpSize : $maxSqlSize;
+        return ($maxSqlSize > $maxPhpSize) ? $maxPhpSize : $maxSqlSize;
     }
 
     private function parseSqlType($sqlType): array
@@ -455,27 +454,26 @@ class AutoForm
 
             return $typeArray;
         }
-        
-        
+
+
 
         if (strpos($sqlType, ") ")) {
 
             //bit hacky, but it works
             $sqlType = str_replace(") ", "(", $sqlType);
             $typeArray =  explode("(", $sqlType);
-        } else if ( strpos($sqlType, ")")){
+        } else if (strpos($sqlType, ")")) {
 
             $sqlType = trim($sqlType, ")");
             $typeArray =  explode("(", $sqlType);
             $typeArray[2] = "";
-        }
-        else {
+        } else {
 
             return ["", "", ""];
         }
 
         //I just want to check if a field is signed or not
-        $typeArray[2] = ($typeArray[2] === "unsigned") ? FALSE : TRUE;
+        $typeArray[2] = ($typeArray[2] === "unsigned") ? false : true;
 
         //todo: checks
         return $typeArray;

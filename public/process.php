@@ -2,9 +2,6 @@
 
 require_once "../src/init.php";
 
-$debug = false;
-$debug = true;
-
 $session = new Session();
 $config = new Config(Request::getTable());
 $error = new SimpleError();
@@ -12,11 +9,7 @@ $database = new Database($config, $error);
 $form = new AutoForm($database);
 $request = new Request($form, $error);
 
-
-
 if ($_SERVER['REQUEST_METHOD'] === "POST") {
-
-    Logger::toLog($_FILES);
     
     $isValidated = $request->validatePost();
     $message = "";
@@ -40,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === "POST") {
     else{
 
         $title = "Error!";
-        $message = ($error->getErrorArray()['message'] ?? "")." This is probably a programming error, not something caused by your input.";  
+        $message = ($error->getErrorArray()['message'] ?? "");  
         //return cleanPost and prefill form       
     }
     
@@ -49,10 +42,10 @@ if ($_SERVER['REQUEST_METHOD'] === "POST") {
     $title = "Oops";
     $message = "You shouldn't be here. This page must be called from a form.";    
 }
-Logger::toLog($_SESSION, "session");
+//Logger::toLog($_SESSION, "session");
 
 require_once "../src/templates/header.php";
 require_once "../src/templates/result.php";
-Logger::printLog($debug);
-$error->printError($debug);
+Logger::printLog(DEBUG);
+$error->printError(DEBUG);
 require_once "../src/templates/footer.php"; 

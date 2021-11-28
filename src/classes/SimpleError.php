@@ -10,34 +10,30 @@
 class SimpleError
 {
 
-    public function __construct(private int $httpError = 0, private string $message = "", private array $trace=[])
+    public function __construct(private int $errorNumber = 0, private string $message = "", private array $trace=[])
     {
     }
 
     /**
      * Loads the error message and httpError number on the SimpleError object.
      */
-    public function setError(string $message, int $httpError = 0): void
+    public function setError(string $message, int $errorNumber = 0): void
     {
         $this->trace = debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT, 1);
         $this->message = $message;
-        $this->httpError  = $httpError;
+        $this->errorNumber  = $errorNumber;
     }
 
     /**
      * Prints the contents of the SimpleError object
      * Doesn't print anything if no error has been set.
      */
-    public function printError(bool $debug=FALSE): void
+    public function printError(bool $debug=false): void
     {
-        if ( !$debug ){
-            
-            return;
-        }
         
-        if ($this->httpError > 0) {
+        if ($this->errorNumber > 0) {
 
-            print $this->httpError . " - ";
+            print $this->errorNumber . " - ";
         }
 
         if ($this->message !== "" ) {
@@ -45,7 +41,7 @@ class SimpleError
             print $this->message;
         }
 
-        if (!empty($this->trace) ) {
+        if (!empty($this->trace) && $debug ) {
 
             print " [".$this->trace[0]['file']." (". $this->trace[0]['line'].")]";
         }
@@ -58,11 +54,11 @@ class SimpleError
      */
     public function getErrorArray(){
         
-        $error = array("httpError"=>500, "message"=>"Something went wrong but I don't know what.");
+        $error = array("errorNumber"=>500, "message"=>"Something went wrong but I don't know what.");
 
-        if ($this->httpError > 0) {
+        if ($this->errorNumber > 0) {
 
-            $error['httpError'] = $this->httpError;
+            $error['errorNumber'] = $this->errorNumber;
         }
 
         if ($this->message !== "") {
@@ -71,5 +67,14 @@ class SimpleError
         }   
         
         return $error;
+    }
+    
+    public function showAndAbort(){
+
+        require_once "../src/templates/error/header.php";
+        Logger::printLog(DEBUG);
+        $this->printError(DEBUG);
+        require_once "../src/templates/error/footer.php"; 
+        exit;
     }
 }
