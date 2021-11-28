@@ -1,0 +1,8 @@
+{
+  "component": "select",
+  "options": {
+    "table": "list",
+    "nameColumn": "name",
+    "valueColumn": "id"
+  }
+}

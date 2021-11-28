@@ -19,9 +19,9 @@ class Request
     public function validatePost(): bool
     {
         $succes = TRUE;
-        
+
         foreach ($this->fieldList as $field) {
-            
+
             // if (!$this->validateInput($field)) {
 
             //     $succes = FALSE;
@@ -33,12 +33,13 @@ class Request
         }
 
         Session::setCleanPost($this->cleanPost);
-        
+
         return $succes;
     }
 
-    public function getCleanPost():array{
-    
+    public function getCleanPost(): array
+    {
+
         return $this->cleanPost;
     }
 
@@ -46,26 +47,27 @@ class Request
     {
 
         return $this->cleanGet;
-    }    
-    private function sanitizeInput(array $fieldArray): mixed{
+    }
+    private function sanitizeInput(array $fieldArray): mixed
+    {
 
         extract($fieldArray);
 
         //when a checkbox set is left empty, there will be no post value.
         $postValue = $_POST[$name] ?? "";
-        
+
         if (is_array($postValue)) {
 
             $postValue = implode("|", $postValue);
         }
-        
+
         $filter = match ($type) {
 
             "text" => FILTER_SANITIZE_STRING,
             "number" => FILTER_SANITIZE_NUMBER_INT,
             "url" => FILTER_SANITIZE_URL,
             "email" => FILTER_SANITIZE_EMAIL,
-            default => FILTER_SANITIZE_STRING,            
+            default => FILTER_SANITIZE_STRING,
         };
 
         return filter_var($postValue, $filter);
@@ -79,13 +81,14 @@ class Request
         $postValue = $_POST[$name] ?? null;
 
         //I force checkboxes to act as non-required, whatever the database says
-        if ($postValue === null && $required && $type !== "checkbox" ) {
+        //file inputs are always empty, their contents are in the $_FILES array
+        if ($postValue === null && $required && $type !== "checkbox" && $type !== "file") {
 
             $this->error->setError("Missing required value'" . $name . "'.");
             return FALSE;
         }
-        
-        if ( is_array($postValue ) ){
+
+        if (is_array($postValue)) {
 
             $postValue = implode("|", $postValue);
             $type = "text";
@@ -93,26 +96,65 @@ class Request
 
         if ($type === "number" && $max && intval($postValue) > $max) {
 
-            $this->error->setError("The value of '" . $name . "' cannot be larger than " . $max . ". The given value is ". $postValue.".");
+            $this->error->setError("The value of '" . $name . "' cannot be larger than " . $max . ". The given value is " . $postValue . ".");
             return FALSE;
         }
 
         if (isset($maxlength) && strlen($postValue) > $maxlength) {
 
-            $this->error->setError("Sorry, '" . $name . "' cannot be longer than " . $maxlength . " characters. The given '". $postValue."' contains ".strlen($postValue)." characters.");
+            $this->error->setError("Sorry, '" . $name . "' cannot be longer than " . $maxlength . " characters. The given '" . $postValue . "' contains " . strlen($postValue) . " characters.");
             return FALSE;
         }
 
         if ($type === "url" && filter_var($postValue, FILTER_VALIDATE_URL) === FALSE) {
 
-            $this->error->setError("The value of '" . $name ."' should be a valid URL.  The given value is " . $postValue . ".");
+            $this->error->setError("The value of '" . $name . "' should be a valid URL.  The given value is " . $postValue . ".");
             return FALSE;
         }
 
         if ($type === "email" && filter_var($postValue, FILTER_VALIDATE_EMAIL) === FALSE) {
 
-            $this->error->setError("The value of '" . $name ."' should be a valid e-mail address. The given value is " . $postValue . ".");
+            $this->error->setError("The value of '" . $name . "' should be a valid e-mail address. The given value is " . $postValue . ".");
             return FALSE;
+        }
+
+        if ($type === "file") {
+
+            if (!isset($_FILES[$name])) {
+
+                $this->error->setError("No file can be found for " . $name . ".");
+                return FALSE;
+            } else if ($_FILES[$name]['size'] > $maxfilesize) {
+
+                $this->error->setError("The uploaded file for " . $name . " is too large.");
+                return FALSE;
+            } else {
+
+                $imageArray = getimagesize($_FILES[$name]['tmp_name']);
+                Logger::toLog($imageArray);
+
+                $maxwidth ?? FALSE;
+                $minwidth ?? FALSE;
+                $maxheigth ?? FALSE;
+                $minheigth ?? FALSE;
+
+                if (
+                    ($maxwidth && $imageArray[0] > $maxwidth )||
+                    ($minwidth && $imageArray[0] < $minwidth) ||
+                    ($maxheigth && $imageArray[1] > $maxheigth) ||
+                    ($minheigth && $imageArray[1] < $minheigth) ) {
+
+                    $error = "There is something wrong with the dimensions of the uploaded image. The image should meet these conditions: ";
+                    $error .= ($minwidth) ? " minimum width = ". $minwidth." pixels," : "";
+                    $error .= ($maxwidth) ? " maximum width = ". $maxwidth. " pixels," : "";
+                    $error .= ($minheigth) ? " minimum width = ". $minheigth. " pixels," : "";
+                    $error .= ($maxheigth) ? " maximum width = ". $maxheigth. " pixels," : "";
+
+                    $this->error->setError(rtrim($error, ",").". ");
+                    
+                    return FALSE;                    
+                }
+            }
         }
 
         return TRUE;

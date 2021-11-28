@@ -8,5 +8,7 @@ You will generally use this n combination with a component, which is a custom in
   "maxlength": "you can override the maxlength value based on the sql field type, as long as you make sure it's not larger than what the database will accept.",
   "max": "see above and check your table very well.",
   "label": "overrides the label generated from the sql table.",
-  "value": "overrides the default value generated from the sql table."
+  "value": "overrides the default value generated from the sql table.",
+  "accept": "specifies which file type(s) to accept in a file input, ie: .png or image/jpeg",
+  "maxfilesize": "used with the file component, max size in bytes, default 4mb"
 }

@@ -1,32 +1,5 @@
-.hiddendiv {
-  /* display: none; */
-  color: white;
-}
-
-.snot {
-  /* display: none; */
-  color: black;
-  border: none;
-  width: 100%;
-  max-width: 600px;
-  background: black;
-  outline: none;
-  padding: 10px;
-}
-
-.snot:focus {
-  /* display: none; */
-  color: white;
-  border: none;
-  outline: none;
-}
-
-.showdiv:focus ~ [id="showdiv"] {
-  /* display: block; */
+.custom-feedback {
+  display: none;
   color: red;
-}
-
-p {
-  white-space: pre-line;
-  max-width: 600px;
+  font-size: smaller;
 }

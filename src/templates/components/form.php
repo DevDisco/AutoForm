@@ -1,5 +1,5 @@
 
-    <form action='process.php' method='post' class="needs-validation" novalidate>
+    <form action='process.php' method='post' class="needs-validation" {{enctype}} novalidate>
         <!-- Start: don't change -->
         <input type="hidden" name="t" id="t" value="{{table}}">
         {{inputs}}

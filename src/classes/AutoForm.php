@@ -26,6 +26,7 @@ class AutoForm
     {
         $form = file_get_contents("../src/templates/components/form.php");
         $inputs = "";
+        $enctype = "";
 
         foreach ($this->fieldList as $field) {
 
@@ -40,13 +41,21 @@ class AutoForm
 
                 $input = $this->createSingleInput($field, $input);
             }
+            
+            if ( $field['type'] === "file"){
+            
+                 $enctype = "enctype='multipart/form-data'";
+            }        
 
             $inputs .= $input;
         }
+        
+
 
         $table = $this->database->config->getCurrentTable();
         $form = str_replace("{{table}}", $table, $form);
         $form = str_replace("{{inputs}}", $inputs, $form);
+        $form = str_replace("{{enctype}}", $enctype, $form);
 
         Session::setCurrentTable($table);
         //Session::unsetCleanForm();
@@ -72,6 +81,7 @@ class AutoForm
 
                 $input = str_replace("{{" . $key . "}}", $value, $input);
             }
+            
         }
 
         return $input;
@@ -199,6 +209,10 @@ class AutoForm
         } else if ($field['type'] === "email") {
 
             $instructions = $config->INSTRUCTIONS_EMAIL;
+        } else if ($field['type'] === "file") {
+
+            //todo: write a b->kB MB function
+            $instructions = str_replace("{{?}}", round($field['maxfilesize']/1024), $config->INSTRUCTIONS_FILE);
         } else if ($field['type'] === "url") {
 
             $instructions = $config->INSTRUCTIONS_URL;
@@ -252,8 +266,9 @@ class AutoForm
         foreach ($options as $key => $value) {
 
             $label = $value;
-            $value = $field['options']['valueColumn'] ? $key : $value;
-            $part =  rtrim($parts[1]);
+            $valueColumn = $field['options']['valueColumn'] ?? FALSE;
+            $value = $valueColumn ? $key : $value;
+            $part = rtrim($parts[1]);
 
             $part = str_replace("{{value}}", $value, $part);
             $part = str_replace("{{label}}", $label, $part);
@@ -305,12 +320,17 @@ class AutoForm
                 $fl[$key]['component'] = "textarea";
             }
 
-            //set maxlength and max
+            //set maxima related to type
             if ($fl[$key]['type'] === 'text') {
-                $fl[$key]['maxlength'] = intval($typeArray[1]);
+                $fl[$key]['maxlength'] = $typeArray[1];
             }
-
-            $fl[$key]['max'] = $this->getAttributeMaxValue($typeArray);
+            else if ($fl[$key]['type'] === 'number') {
+                $fl[$key]['max'] = $this->getAttributeMaxValue($typeArray);
+            }
+            else if ($fl[$key]['type'] === 'file') {
+                $fl[$key]['maxfilesize'] = $this->getMaxFileSize($field['Type']);
+                $fl[$key]['component'] = "file";
+            }
 
             //get required
             $fl[$key]['required'] = ($field['Null'] === "NO") ? TRUE : FALSE;
@@ -321,7 +341,7 @@ class AutoForm
 
             if (is_file($optionsFile)) {
 
-                //json
+                //array_merge will overwrite keys in $fl[$key] with values in $overrideArray
                 $overrideArray = json_decode(file_get_contents($optionsFile), TRUE) ?? [];
                 $fl[$key] = array_merge($fl[$key], $overrideArray);
             }
@@ -360,8 +380,8 @@ class AutoForm
             return $max;
         }
 
-        //correct for field length
-        //there probably a fancy math way of doing this...:(
+        //correct for field length if that's set to a smaller value than default
+        //there is probably a fancy math way of doing this...:(
         $maxByLength = intval(str_repeat("9", $typeArray[1]));
 
         $max = ($maxByLength < $max) ? $maxByLength : $max;
@@ -384,20 +404,50 @@ class AutoForm
             "mediumint" => "number",
             "date" => "number",
             "datetime" => "datetime-local",
+            "file" => "file",
             default => "text",
         };
 
         return $type;
     }
+    
+    private function getSizeInBytes($string)
+    {
+        sscanf($string, '%u%c', $number, $suffix);
+        if (isset($suffix)) {
+            $number = $number * pow(1024, strpos(' KMG', strtoupper($suffix)));
+        }
+        return $number;
+    }
+
+    private function getMaxFileSize(string $type): int
+    {
+        $maxPostSize = $this->getSizeInBytes(ini_get('post_max_size'));
+        $maxUploadSize = $this->getSizeInBytes(ini_get('upload_max_filesize'));
+        $maxPhpSize = ($maxUploadSize > $maxPostSize) ? $maxPostSize : $maxUploadSize;
+
+        $maxSqlSize = match ($type) {
+            "blob" => 65535,
+            "mediumblob" => 16777215,
+            "longblob" => 4294967295,
+            default => 4194304,  //4MB
+        };
+        
+        //you can't upload anything larger than the max post size
+        return ($maxSqlSize > $maxPhpSize ) ? $maxPhpSize : $maxSqlSize;
+    }
 
     private function parseSqlType($sqlType): array
     {
-        //text types have no length value
+        //text and blob types have no length value
         $typeArray = match ($sqlType) {
 
             "tinytext" => ['text', 255, ""],
             "text" => ['text', 65535, ""],
             "datetime" => ['datetime', 20, ""],
+            "blob" => ['file', "", ""],
+            "mediumblob" => ['file', "", ""],
+            "longblob" => ['file', "", ""],
             default => []
         };
 
@@ -405,17 +455,23 @@ class AutoForm
 
             return $typeArray;
         }
+        
+        
 
-        if (strpos($sqlType, ") ") !== FALSE) {
+        if (strpos($sqlType, ") ")) {
 
             //bit hacky, but it works
             $sqlType = str_replace(") ", "(", $sqlType);
             $typeArray =  explode("(", $sqlType);
-        } else {
+        } else if ( strpos($sqlType, ")")){
 
             $sqlType = trim($sqlType, ")");
             $typeArray =  explode("(", $sqlType);
             $typeArray[2] = "";
+        }
+        else {
+
+            return ["", "", ""];
         }
 
         //I just want to check if a field is signed or not

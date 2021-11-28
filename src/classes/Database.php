@@ -48,19 +48,28 @@ class Database
         return $this->runSQL("SHOW FULL COLUMNS FROM ".$this->config->getCurrentTable());
     }
     
-    public function insertAutoForm( array $cleanPost ):bool{
+    public function insertAutoForm( array $cleanPost, array $fieldList ):bool{
 
         
         $table = $this->config->getCurrentTable();
+        
+        foreach ($fieldList as $field) {
+            
+            if ($field['type']==="file"){
+                
+                Logger::toLog($_FILES[$field['name']]['tmp_name'], "insertAutoForm");
+                $image_base64 = base64_encode(file_get_contents($_FILES[$field['name']]['tmp_name']));
+                $image = "data:". $_FILES[$field['name']]['type'].";base64," . $image_base64;
+
+                $cleanPost[$field['name']] = $image;
+            }
+        }
     
         $keys = array_keys($cleanPost);
         $columnNames = implode(",", $keys);
         $namedParams = implode(",", array_map(fn ($attr) => ":$attr", $keys));
         
         $sql = "INSERT INTO $table ($columnNames) VALUES ($namedParams)";
-        
-        Logger::toLog($sql);
-
         $stmt = $this->pdo->prepare($sql);
         
         return $stmt->execute($cleanPost);
@@ -90,5 +99,14 @@ class Database
         else{
             return FALSE;
         }
+    }
+    
+    
+    public function getImage( int $id=3 ){
+
+        $sql = "SELECT image_file FROM files WHERE id=3";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchColumn();    
     }
 }

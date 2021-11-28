@@ -1,0 +1,10 @@
+{
+  "component": "file",
+  "type": "file",
+  "accept": ".png, image/jpeg,.mp4",
+  "maxfilesize": 1048576,
+  "minwidth": 640,
+  "maxwidth": 640,
+  "minheigth": 320,
+  "maxheigth": 320
+}

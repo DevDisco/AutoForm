@@ -16,13 +16,15 @@ $request = new Request($form, $error);
 
 if ($_SERVER['REQUEST_METHOD'] === "POST") {
 
+    Logger::toLog($_FILES);
+    
     $isValidated = $request->validatePost();
     $message = "";
     $title = "1";
     
     if ($isValidated ){
          
-        $isInserted = $database->insertAutoForm($request->getCleanPost());
+        $isInserted = $database->insertAutoForm($request->getCleanPost(), $form->getFieldList());
         
         if ($isInserted){
             
