@@ -44,7 +44,14 @@ class Database
 
     public function write(string $sql, array $params = []): bool
     {
-        return $this->prepareExecute($sql, $params);
+        try {
+            $this->prepareExecute($sql, $params);
+        } catch (\PDOException $th) {
+            Logger::toLog($th->getMessage());
+            $this->error->setError("Database: fetch query failed.", $th->getCode());
+            $this->error->showAndAbort();
+        } 
+        return true; 
     }
 
 
@@ -75,9 +82,11 @@ class Database
         return $this->read("SHOW FULL COLUMNS FROM " . $this->config->getCurrentTable());
     }
 
-    public function insertAutoForm(array $cleanPost, array $fieldList): bool
+    public function insertFormData( Request $request ): bool
     {
 
+        $cleanPost =  $request->getCleanPost();
+        $fieldList = $request->fields->get();
         $table = $this->config->getCurrentTable();
 
         foreach ($fieldList as $field) {

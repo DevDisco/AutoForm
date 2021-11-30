@@ -31,34 +31,38 @@ class Core
 
     public static function checkAgainstDimension(string|bool $condition, int|string $value): bool
     {
+        $result = false;
+        $part = 0;
 
-         //if no condition is set, let everything through
-        if ( $condition===false){
+        //if no condition is set, let everything through
+        if ($condition === false) {
 
-            return true;
-        } 
-        
+            $result = true;
+            $part = 1;
+        }
+
         $value = intval($value);
         $match = intval(preg_replace('/\D/', '', $condition));
 
+        if (strpos($condition, "<") === 0 && $value < $match) {
+            $part = 2;
+            $result = true;
+        } else if (strpos($condition, ">") === 0 && $value > $match) {
+            $part = 3;
+            $result = true;
+        } else if ($value === $match) {
+            $part = 4;
+            $result = true;
+        }
+
         Logger::toLog(
             [
-                'condition' => $condition, 'value' => $value, 'match' => $match
+                'condition' => $condition ?? "-", 'value' => $value ?? "-", 'match' => $match ??
+                    "-",  'result' => $result,  'part' => $part
             ],
             "checkAgainstDimension"
         );
 
-        if (strpos($condition, "<") && $value < $match) {
-            
-            return true;
-        } else if (strpos($condition, ">") && $value > $match) {
-
-            return true;
-        } else if ($condition == $match && $value == $match) {
-
-            return true;
-        }
-
-        return false;
+        return $result;
     }
 }

@@ -1,4 +1,4 @@
 {
-  "component": "email",
+  "component": "input_email",
   "type": "email"
 }

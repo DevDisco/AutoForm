@@ -6,8 +6,9 @@ $session = new Session();
 $config = new Config(Request::getTable());
 $error = new SimpleError();
 $database = new Database($config, $error);
-$form = new AutoForm($database);
-$request = new Request($form, $error);
+$fields = new Fields($database);
+$form = new AutoForm($fields);
+$request = new Request($fields, $error);
 
 if ($_SERVER['REQUEST_METHOD'] === "POST") {
     
@@ -17,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === "POST") {
     
     if ($isValidated ){
          
-        $isInserted = $database->insertAutoForm($request->getCleanPost(), $form->getFieldList());
+        $isInserted = $database->insertFormData($request);
         
         if ($isInserted){
             
@@ -42,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === "POST") {
     $title = "Oops";
     $message = "You shouldn't be here. This page must be called from a form.";    
 }
-//Logger::toLog($_SESSION, "session");
+Logger::toLog($_SESSION, "session");
 
 require_once "../src/templates/header.php";
 require_once "../src/templates/result.php";

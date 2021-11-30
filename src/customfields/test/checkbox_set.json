@@ -1,5 +1,5 @@
 {
-  "component": "checkbox",
+  "component": "group_checkbox",
   "type": "checkbox",
   "options": ["blue", "green", "red", "yellow"]
 }

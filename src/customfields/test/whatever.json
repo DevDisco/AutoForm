@@ -1,5 +1,5 @@
 {
-  "component": "switches",
+  "component": "group_switches",
   "type": "checkbox",
   "options": ["blue", "green", "red", "yellow"],
   "label": "My Label!"

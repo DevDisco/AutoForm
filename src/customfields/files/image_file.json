@@ -1,5 +1,5 @@
 {
-  "component": "image",
+  "component": "input_image",
   "type": "file",
   "accept": ".png, image/jpeg,.mp4",
   "maxfilesize": 1048576,

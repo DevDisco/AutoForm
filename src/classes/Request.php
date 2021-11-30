@@ -2,14 +2,15 @@
 
 class Request
 {
-    private $fieldList = [];
-    private $cleanPost = [];
-    private $cleanGet = [];
 
-    public function __construct(private AutoForm $form, public SimpleError $error)
+    private array $cleanPost = [];
+    private array $cleanGet = [];
+    private array $fieldList = [];
+
+    public function __construct(public Fields $fields, public SimpleError $error)
     {
-
-        $this->fieldList = $form->getFieldList();
+        $this->fieldList = $fields->get();
+        //Logger::toLog($fields,"fields");
     }
 
     /**
@@ -21,6 +22,8 @@ class Request
         $succes = true;
 
         foreach ($this->fieldList as $field) {
+
+            Logger::toLog($field, "field");
 
             $succes = !$this->validateInput($field) ? false : $succes;
 
@@ -76,8 +79,7 @@ class Request
 
     private function validateInput(array $field): bool
     {
-
-        extract($field);
+       extract($field);
 
         $postValue = $_POST[$name] ?? null;
 
@@ -129,7 +131,7 @@ class Request
 
                 $this->error->setError("Upload: The uploaded file for " . $name . " is too large.");
                 return false;
-            } else if ( $component === "image"){
+            } else if ( $component === "input_image"){
 
                 $imageArray = getimagesize($_FILES[$name]['tmp_name']);
                 Logger::toLog($imageArray);
@@ -161,14 +163,24 @@ class Request
     public static function getTable(): string|bool
     {
 
-        //NB: $this->isValidTable($_GET['t'] ?? false is a shortcut for a check on isset()
+        //navbar links
         if ($_SERVER['REQUEST_METHOD'] === "GET" && self::isValidTable($_GET['t'] ?? false)) {
 
+            unset($_SESSION['currentTable']);
             return $_GET['t'];
-        } else if ($_SERVER['REQUEST_METHOD'] === "POST" && self::isValidTable($_POST['t'] ?? false)) {
+        }
+        //link to process page from form
+        else if ($_SERVER['REQUEST_METHOD'] === "POST" && self::isValidTable($_POST['t'] ?? false)) {
 
             return $_POST['t'];
         }
+        //link from result page in case of an error
+        else if (self::isValidTable($_SESSION['currentTable'] ?? false)) {
+
+            $table = $_SESSION['currentTable'];
+            unset($_SESSION['currentTable']);
+            return $table;
+        } 
 
         return false;
     }

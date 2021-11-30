@@ -2,31 +2,24 @@
 
 class AutoForm
 {
+    private Database $database;
+    private array $fieldList;
 
-    public function __construct(
-        private Database $database
-    ) {
-
-        //show form
-        $table = $this->database->config->getCurrentTable();
-        $this->tableData = $database->showTable($table);
+    public function __construct(private Fields $fields) {
+        
+        $this->fieldList = $fields->get();
+        $this->database = $fields->database;
 
         //Logger::toLog($this->table, "table");
-
-        $this->createFieldList();
     }
 
-    public function getFieldList()
-    {
-
-        return $this->fieldList;
-    }
 
     public function createForm(): string
     {
         $form = file_get_contents("../src/templates/components/form.php");
         $inputs = "";
         $enctype = "";
+        Logger::toLog($this->fieldList, "fieldList");
 
         foreach ($this->fieldList as $field) {
 
@@ -214,7 +207,7 @@ class AutoForm
             //todo: accepted file extensions? Seems to be restricted by input already.
             $maxFileSize = Core::getBytesAsSize($maxfilesize);
 
-            if ($component === "image") {
+            if ($component === "input_image") {
                 
                 $instructions = str_replace("{{?}}", $maxFileSize, $config->INSTRUCTIONS_IMAGE);
                 $instructions = str_replace("{{1}}", $width, $instructions);
@@ -290,192 +283,5 @@ class AutoForm
         }
 
         return $parts[0] . $insert . $parts[2];
-    }
-
-    private function createFieldList(): void
-    {
-        $fl = [];
-
-        foreach ($this->tableData as $key => $field) {
-
-            //ignore autoincrementing primary keys 
-            if ($field['Field'] === "id" || ($field['Key'] === "PRI" && strpos($field['Extra'], "auto_increment") !== false)) {
-
-                continue;
-            }
-
-            //ignore date fields with default set to current_timestamp()
-            if (($field['Type'] === "datetime" && $field['Default'] === "current_timestamp()")) {
-
-                continue;
-            }
-
-            //convert sql field info to an array that will be used to 
-            //create and validate the form
-            $fl[$key]['name'] = $field['Field'];
-            $fl[$key]['value'] = $field['Default'] ?? false;
-
-            //the type field contains information about type, length and sign
-            $typeArray = $this->parseSqlType($field['Type']);
-
-            //default is a standard text input with html5 types based on sql field type
-            $fl[$key]['component'] = "default";
-            $fl[$key]['type'] = $this->getInputType($typeArray);
-
-            //correct input and type for longer texts
-            if ($fl[$key]['type'] === 'text' && $typeArray[1] > 64) {
-
-                $fl[$key]['component'] = "textarea";
-            }
-
-            //set maxima related to type
-            if ($fl[$key]['type'] === 'text') {
-                $fl[$key]['maxlength'] = $typeArray[1];
-            } else if ($fl[$key]['type'] === 'number') {
-                $fl[$key]['max'] = $this->getAttributeMaxValue($typeArray);
-            } else if ($fl[$key]['type'] === 'file') {
-                $fl[$key]['maxfilesize'] = $this->getMaxFileSize($field['Type']);
-                $fl[$key]['component'] = "file";
-            }
-
-            //get required
-            $fl[$key]['required'] = ($field['Null'] === "NO") ? true : false;
-
-            //override or expand with custom field settings
-            $table = $this->database->config->getCurrentTable();
-            $optionsFile = "../src/customfields/$table/" . $field['Field'] . ".json";
-
-            if (is_file($optionsFile)) {
-
-                //array_merge will overwrite keys in $fl[$key] with values in $overrideArray
-                $overrideArray = json_decode(file_get_contents($optionsFile), true) ?? [];
-                $fl[$key] = array_merge($fl[$key], $overrideArray);
-            }
-        }
-
-        $this->fieldList = $fl;
-    }
-
-    private function getAttributeMaxValue(array $typeArray): int|bool
-    {
-        $isSigned = $typeArray[2];
-        $max = false;
-
-        $power = match ($typeArray[0]) {
-
-            "tinyint" => 8,
-            "smallint" => 16,
-            "mediumint" => 24,
-            "mediumint" => 32,
-            "bigint" => 64,
-            default => false,
-        };
-
-        if ($power) {
-
-            if ($isSigned) {
-
-                $max = pow(2, ($power - 1)) - 1;
-            } else {
-
-                $max = pow(2, $power) - 1;
-            }
-        } else {
-
-            //not a number, abort
-            return $max;
-        }
-
-        //correct for field length if that's set to a smaller value than default
-        //there is probably a fancy math way of doing this...:(
-        $maxByLength = intval(str_repeat("9", $typeArray[1]));
-
-        $max = ($maxByLength < $max) ? $maxByLength : $max;
-
-        return $max;
-    }
-
-    private function getInputType(array $typeArray): string|bool
-    {
-        if ($typeArray === false) {
-
-            return false;
-        }
-
-        $type = match ($typeArray[0]) {
-
-            "int" => "number",
-            "tinyint" => "number",
-            "smallint" => "number",
-            "mediumint" => "number",
-            "date" => "number",
-            "datetime" => "datetime-local",
-            "file" => "file",
-            default => "text",
-        };
-
-        return $type;
-    }
-
-
-
-    private function getMaxFileSize(string $type): int
-    {
-        $maxPostSize = Core::getSizeInBytes(ini_get('post_max_size'));
-        $maxUploadSize = Core::getSizeInBytes(ini_get('upload_max_filesize'));
-        $maxPhpSize = ($maxUploadSize > $maxPostSize) ? $maxPostSize : $maxUploadSize;
-
-        $maxSqlSize = match ($type) {
-            "blob" => 65535,
-            "mediumblob" => 16777215,
-            "longblob" => 4294967295,
-            default => 4194304,  //4MB
-        };
-
-        //you can't upload anything larger than the max post size
-        return ($maxSqlSize > $maxPhpSize) ? $maxPhpSize : $maxSqlSize;
-    }
-
-    private function parseSqlType($sqlType): array
-    {
-        //text and blob types have no length value
-        $typeArray = match ($sqlType) {
-
-            "tinytext" => ['text', 255, ""],
-            "text" => ['text', 65535, ""],
-            "datetime" => ['datetime', 20, ""],
-            "blob" => ['file', "", ""],
-            "mediumblob" => ['file', "", ""],
-            "longblob" => ['file', "", ""],
-            default => []
-        };
-
-        if (!empty($typeArray)) {
-
-            return $typeArray;
-        }
-
-
-
-        if (strpos($sqlType, ") ")) {
-
-            //bit hacky, but it works
-            $sqlType = str_replace(") ", "(", $sqlType);
-            $typeArray =  explode("(", $sqlType);
-        } else if (strpos($sqlType, ")")) {
-
-            $sqlType = trim($sqlType, ")");
-            $typeArray =  explode("(", $sqlType);
-            $typeArray[2] = "";
-        } else {
-
-            return ["", "", ""];
-        }
-
-        //I just want to check if a field is signed or not
-        $typeArray[2] = ($typeArray[2] === "unsigned") ? false : true;
-
-        //todo: checks
-        return $typeArray;
     }
 }

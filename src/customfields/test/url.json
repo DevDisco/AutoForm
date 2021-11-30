@@ -1,4 +1,4 @@
 {
-  "component": "url",
+  "component": "input_url",
   "type": "url"
 }

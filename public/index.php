@@ -6,12 +6,13 @@ $session = new Session();
 $config = new Config(Request::getTable());
 $error = new SimpleError();
 $database = new Database($config, $error);
-$form = new AutoForm($database);
+$fields = new Fields($database);
+$form = new AutoForm($fields);
 $navbar = new Navigation($config);
 
 //Logger::toLog($database->showTable(), "table");
-//Logger::toLog($form->getFieldList(), "fl");
-//Logger::toLog(Session::getCleanPost(), "getCleanPost");
+//Logger::toLog($fieldList->get(), "fl");
+//Logger::toLog($_SESSION, "session");
 
 $formHtml = $form->createForm();
 

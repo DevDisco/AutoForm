@@ -1,0 +1,67 @@
+{
+  "varchar": {
+    "component": "input_text",
+    "validate": false,
+    "filter": "string",
+    "plc_attr": {
+      "name": true,
+      "maxlength": true,
+      "required": true,
+      "title": "instructions"
+    }
+  },
+  "text": {
+    "component": "textarea",
+    "validate": false,
+    "filter": "string",
+    "plc_attr": {
+      "name": true,
+      "value": true,
+      "maxlength": true,
+      "required": true,
+      "title": "instructions"
+    },
+    "plc_content": {
+      "value": true
+    }
+  },
+  "mediumblob": {
+    "component": "input_file",
+    "validate": false,
+    "filter": false,
+    "plc_attr": {
+      "name": true,
+      "value": true,
+      "maxlength": true,
+      "required": true,
+      "accept": true,
+      "title": "instructions"
+    }
+  },
+  "longblob": {
+    "component": "input_file",
+    "validate": false,
+    "filter": false,
+    "plc_attr": {
+      "name": true,
+      "value": true,
+      "maxlength": true,
+      "required": true,
+      "accept": true,
+      "title": "instructions"
+    }
+  },
+  "tinyint": {
+    "component": "input_number",
+    "validate": "int",
+    "filter": false,
+    "plc_attr": {
+      "name": true,
+      "value": true,
+      "maxlength": true,
+      "required": true,
+      "accept": true,
+      "title": "instructions"
+    }
+  }
+}

@@ -1,5 +1,5 @@
 {
-  "component": "radio",
+  "component": "group_radio",
   "type": "radio",
   "options": ["blue", "green", "red", "yellow"]
 }
