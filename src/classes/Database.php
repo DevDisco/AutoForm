@@ -21,6 +21,7 @@ class Database
         try {
             $this->pdo = new PDO($dsn, $user, $pwd);
             $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $this->pdo->setAttribute(PDO::MYSQL_ATTR_INIT_COMMAND, "SET NAMES 'utf8'");
         } catch (PDOException $th) {
             Logger::toLog($th->getMessage());
             $error->setError("Database: connection failed.");

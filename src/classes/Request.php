@@ -65,16 +65,17 @@ class Request
             $postValue = implode("|", $postValue);
         }
 
-        $filter = match ($type) {
+        $postValue = match ($type) {
 
-            "text" => FILTER_SANITIZE_STRING,
-            "number" => FILTER_SANITIZE_NUMBER_INT,
-            "url" => FILTER_SANITIZE_URL,
-            "email" => FILTER_SANITIZE_EMAIL,
-            default => FILTER_SANITIZE_STRING,
+            "number" => filter_var(
+                $postValue,
+                FILTER_SANITIZE_NUMBER_INT),
+            "url" => filter_var($postValue, FILTER_SANITIZE_URL),
+            "email" => filter_var($postValue, FILTER_SANITIZE_EMAIL),
+            default => $postValue
         };
 
-        return filter_var($postValue, $filter);
+        return $postValue;
     }
 
     private function validateInput(array $field): bool
