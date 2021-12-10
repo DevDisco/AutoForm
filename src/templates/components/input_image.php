@@ -6,6 +6,5 @@
             <div class="custom-feedback">
                 Sorry, this file is too large. {{instructions}}
             </div>
-
         </div>
     </div>

@@ -1,13 +1,5 @@
 <?php
 
-require_once "../src/init.php";
-
-$session = new Session();
-$config = new Config(Request::getTable());
-$error = new SimpleError();
-$database = new Database($config, $error);
-$fields = new Fields($database);
-$form = new AutoForm($fields);
 $request = new Request($fields, $error);
 
 if ($_SERVER['REQUEST_METHOD'] === "POST") {
@@ -45,8 +37,8 @@ if ($_SERVER['REQUEST_METHOD'] === "POST") {
 }
 Logger::toLog($_SESSION, "session");
 
-require_once "../src/templates/header.php";
-require_once "../src/templates/result.php";
+require_once TEMPLATES_FOLDER."header.php";
+require_once TEMPLATES_FOLDER . "result.php";
 Logger::printLog(DEBUG);
 $error->printError(DEBUG);
-require_once "../src/templates/footer.php"; 
+require_once TEMPLATES_FOLDER . "footer.php"; 

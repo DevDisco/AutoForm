@@ -1,13 +1,18 @@
 <?php
 
-const DEBUG = true;
+//folders
+const SOURCE_FOLDER = "../../../src/";
+const CLASS_FOLDER = SOURCE_FOLDER."classes/";
+const APP_FOLDER = "../";
+const TEMPLATES_FOLDER = SOURCE_FOLDER."templates/";
+
+
+
 
 //A simple autoloader that grabs everything in /classes/, no need for composer
-$classFolder = "../src/classes/";
+if (is_dir(CLASS_FOLDER)) {
 
-if (is_dir($classFolder)) {
-
-    $dir = new DirectoryIterator($classFolder);
+    $dir = new DirectoryIterator(CLASS_FOLDER);
 
     foreach ($dir as $fileinfo) {
         
@@ -17,3 +22,11 @@ if (is_dir($classFolder)) {
         }
     }
 }
+
+//call classes used in both index.php and process.php
+$session = new Session();
+$config = new Config(Request::getTable());
+$error = new SimpleError();
+$database = new Database($config, $error);
+$fields = new Fields($database);
+$form = new AutoForm($fields);

@@ -70,7 +70,7 @@ class Fields
 
             //override or expand with custom field settings
             $table = $this->database->config->getCurrentTable();
-            $optionsFile = "../src/customfields/$table/$Field.json";
+            $optionsFile = APP_FOLDER."customfields/$table/$Field.json";
 
             if (is_file($optionsFile)) {
 

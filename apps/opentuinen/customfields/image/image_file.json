@@ -1,0 +1,8 @@
+{
+  "component": "input_image",
+  "type": "file",
+  "accept": ".png, image/jpeg",
+  "maxfilesize": 1048576,
+  "width": "640",
+  "height": "360"
+}

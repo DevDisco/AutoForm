@@ -17,7 +17,7 @@ class SimpleError
     /**
      * Loads the error message and httpError number on the SimpleError object.
      */
-    public function setError(string $message, int $errorNumber = 0): void
+    public function setError(string $message, int|string $errorNumber = 0): void
     {
         $this->trace = debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT, 1);
         $this->message = $message;

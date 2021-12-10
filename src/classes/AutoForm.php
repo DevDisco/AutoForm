@@ -16,7 +16,7 @@ class AutoForm
 
     public function createForm(): string
     {
-        $form = file_get_contents("../src/templates/components/form.php");
+        $form = file_get_contents(TEMPLATES_FOLDER."components/form.php");
         $inputs = "";
         $enctype = "";
         Logger::toLog($this->fieldList, "fieldList");
@@ -24,7 +24,7 @@ class AutoForm
         foreach ($this->fieldList as $field) {
 
             $inputType = $field['component'];
-            $input = file_get_contents("../src/templates/components/$inputType.php");
+            $input = file_get_contents(TEMPLATES_FOLDER . "components/$inputType.php");
 
             if (strpos($input, "[[repeat]]") && !strpos($input, "<option")) {
 
