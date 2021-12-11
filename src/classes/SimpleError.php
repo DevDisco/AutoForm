@@ -10,7 +10,7 @@
 class SimpleError
 {
 
-    public function __construct(private int $errorNumber = 0, private string $message = "", private array $trace=[])
+    public function __construct(private int|string $errorNumber = 0, private string $message = "", private array $trace=[])
     {
     }
 
@@ -71,10 +71,10 @@ class SimpleError
     
     public function showAndAbort(){
 
-        require_once "../src/templates/error/header.php";
+        require_once TEMPLATES_FOLDER."error/header.php";
         Logger::printLog(DEBUG);
         $this->printError(DEBUG);
-        require_once "../src/templates/error/footer.php"; 
+        require_once TEMPLATES_FOLDER."error/footer.php"; 
         exit;
     }
 }

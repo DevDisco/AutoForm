@@ -59,6 +59,8 @@ class Database
     private function prepareExecute(string $sql, array $params = []): PDOStatement|bool
     {
 
+        // /Logger::toLog($sql, "prepareExecute");
+
         try {
             $stmt = $this->pdo->prepare($sql);
         } catch (\PDOException $th) {
@@ -90,16 +92,8 @@ class Database
         $fieldList = $request->fields->get();
         $table = $this->config->getCurrentTable();
 
-        foreach ($fieldList as $field) {
-
-            if ($field['type'] === "file") {
-
-                //images and other files will be stored inside db
-                $image_base64 = base64_encode(file_get_contents($_FILES[$field['name']]['tmp_name']));
-                $image = "data:" . $_FILES[$field['name']]['type'] . ";base64," . $image_base64;
-                $cleanPost[$field['name']] = $image;
-            }
-        }
+        //I could integrate this with getCleanPost()
+        $cleanPost = $request->processFiles($cleanPost, $fieldList);
 
         $keys = array_keys($cleanPost);
         $columnNames = implode(",", $keys);

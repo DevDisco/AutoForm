@@ -10,9 +10,10 @@ class Fields
 
         //show form
         $table = $this->database->config->getCurrentTable();
+        //Logger::toLog($table, "table");
         $this->tableView = $database->showTable($table);
 
-        //Logger::toLog($this->table, "table");
+        
 
         $this->create();
     }

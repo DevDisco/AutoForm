@@ -1,0 +1,9 @@
+{
+  "component": "select",
+  "options": {
+    "table": "categorie_werk",
+    "nameColumn": "titel",
+    "valueColumn": "id"
+  },
+  "label": "Soort werk"
+}

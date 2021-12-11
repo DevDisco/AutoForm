@@ -52,6 +52,7 @@ class Request
 
         return $this->cleanGet;
     }
+    
     private function sanitizeInput(array $fieldArray): mixed
     {
 
@@ -91,6 +92,12 @@ class Request
             $this->error->setError("Upload: Missing required value'" . $name . "'.");
             return false;
         }
+        
+        if ($postValue === null && !$required ){
+            
+            //empty non-required fields don't have to be checked
+            return true;
+        }
 
         if (is_array($postValue)) {
 
@@ -123,6 +130,7 @@ class Request
         }
 
         if ($type === "file") {
+            
 
             if (!isset($_FILES[$name])) {
 
@@ -199,5 +207,69 @@ class Request
         }
 
         return false;
+    }
+
+    /**
+     * Checks cleanPost to see if there are any file inputs,
+     * and deals with either base64 conversion for database inserts,
+     * or file uploads to a directory.
+     */
+    public function processFiles(array $cleanPost, array $fieldList): array
+    {
+
+        foreach ($fieldList as $field) {
+
+            if ($field['type'] === "file") {
+
+                $path = $field['path'] ?? false;
+                $key  = $field['name'];
+
+                if ($path) {
+
+                    if (is_dir($path)) {
+                        
+                           // File name
+                        $filename = $_FILES[$key]['name'];
+
+                        //update cleanPost
+                        $cleanPost[$key] = $filename;
+
+                        // Location
+                        $target_file = $path . $filename;
+
+                        // Upload file
+                        if (!move_uploaded_file(
+                            $_FILES[$key]['tmp_name'],
+                            $target_file)
+                            ){
+    
+                            //error
+                            $this->error->setError("Can't move file to folder $path", 500);
+                        }
+                        
+
+                        Logger::toLog($path, "path");
+                        Logger::toLog($cleanPost, "cleanPost");
+                        Logger::toLog($_POST, "_POST");
+                        Logger::toLog($_FILES, "_FILES");
+                        Logger::toLog($filename, "uniqid");
+                        //process upload
+                        
+                    } else {
+
+                        //error
+                        $this->error->setError("Can't find upload folder $path", 500);
+                    }
+                } else {
+
+                    //images and other files will be stored inside db
+                    $image_base64 = base64_encode(file_get_contents($_FILES[$key]['tmp_name']));
+                    $image = "data:" . $_FILES[$key]['type'] . ";base64," . $image_base64;
+                    $cleanPost[$key] = $image;
+                }
+            }
+        }
+
+        return $cleanPost;
     }
 }

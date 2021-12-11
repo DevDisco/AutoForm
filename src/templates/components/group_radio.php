@@ -3,7 +3,7 @@
           <div class="col-sm-9">
               [[repeat]]
               <div class="form-check">
-                  <input class="form-check-input" type="{{type}}" name="{{name}}" value="{{value}}" id="{{id}}" title="{{instructions}}" {{required}} {{checked}}>
+                  <input class="form-check-input" type="radio" name="{{name}}" value="{{value}}" id="{{id}}" title="{{instructions}}" {{required}} {{checked}}>
                   <label class="form-check-label" for="{{id}}" title="{{instructions}}">
                       {{label}}
                   </label>

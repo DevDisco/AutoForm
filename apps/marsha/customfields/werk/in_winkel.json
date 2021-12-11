@@ -1,0 +1,9 @@
+{
+  "component": "group_radio",
+  "options": {
+    "table": "categorie_bool",
+    "nameColumn": "titel",
+    "valueColumn": "value"
+  },
+  "label": "Zet in de winkel?"
+}

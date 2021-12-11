@@ -108,15 +108,27 @@ class AutoForm
         return $value;
     }
 
-    private function isSelected(array $field, string $option): bool
+    private function isSelected(array $field, string $value): bool
     {
-        $prefill = Session::getCleanPost()[$field['name']] ?? false;
 
-        if (strpos($prefill, "|")) {
+        //Logger::toLog($field['name'].", value=$value, default=".$field['value'], "test");
+
+        //preset from database or custom field
+        $default = $field['value'];
+        
+        //used to fill a field when redirected to form after a failed post
+        $prefill = Session::getCleanPost()[$field['name']] ?? null;
+
+        
+        if ($prefill !== null && strpos($prefill, "|")) {
 
             $prefillArray = explode("|", $prefill);
-            return in_array($option, $prefillArray) ?: false;
-        } else if ($prefill == $option) {
+            return in_array($value, $prefillArray) ?: false;
+        } else if ($prefill !== null && $prefill == $value) {
+
+            return true;
+        }
+        else if ($default == $value ) {
 
             return true;
         }
@@ -145,11 +157,14 @@ class AutoForm
         return $input . "\n";
     }
 
+    //creates a radion or checkbox group from a one-dimensional array
+    //ie: value and label are the same
     private function createRepeatingInput(array $field, string $input): string
     {
         $item = "";
         $input = rtrim($input);
         $return = "";
+        $i = 0;
 
         //parse input into fixed and repeated parts
         $parts = explode("[[repeat]]", $input);
@@ -159,17 +174,33 @@ class AutoForm
         $instructions = $this->createInstructions($field);
         $label = $parts[0] = str_replace("{{label}}", $label, $parts[0]);
 
-        foreach ($field['options'] as $key => $option) {
 
-            $id = $field['name'] . "_" . $key;
-            $label = $this->cleanLabel($option);
-            $item = str_replace("{{id}}", $id, $parts[1]);
+        $options = $this->getOptionsList($field);
+
+        //return input unaltered if the option option (duh) isn't set
+        if ($options === FALSE) {
+
+            return $input;
+        }
+
+        //Logger::toLog($options, "options");
+
+        foreach ($options as $key => $value) {
+
+            $id = $field['name'] . "_" . $i;
+            $label = $this->cleanLabel($value);
+            $label = $value;
+            $valueColumn = $field['options']['valueColumn'] ?? false;
+            $value = $valueColumn ? $key : $value;
+            $item = rtrim($parts[1]);        
+            
+            $item = str_replace("{{id}}", $id, $item);
             $item = str_replace("{{label}}", $label, $item);
-            $item = str_replace("{{value}}", $option, $item);
+            $item = str_replace("{{value}}", $value, $item);
             $item = str_replace("{{instructions}}", $instructions, $item);
 
             //if ($field['value'] == $option) {
-            if ($this->isSelected($field, $option)) {
+            if ($this->isSelected($field, $value) ) {
 
                 $item = str_replace("{{checked}}", "checked", $item);
             }
@@ -181,6 +212,8 @@ class AutoForm
             $item = $this->cleanUp($item);
 
             $return .= $item . "\n";
+            
+            ++$i;
         }
 
         return $parts[0] . $return . $parts[2] . "\n";
@@ -242,24 +275,17 @@ class AutoForm
         return $label;
     }
 
+    //create the options for a select from an associative array
     private function insertOptions(array|bool $field, string $input): string
     {
         $parts = explode("[[repeat]]", $input);
         $insert = "";
-        $options = [];
+        $options = $this->getOptionsList($field);
 
         //return input unaltered if the option option (duh) isn't set
-        if (empty($field['options'])) {
+        if ($options === FALSE) {
 
             return $input;
-        }
-
-        if (isset($field['options']['table']) && isset($field['options']['nameColumn'])) {
-
-            $options = $this->database->getOptionsFromDb($field);
-        } else {
-
-            $options = $field['options'];
         }
 
         //Logger::toLog($options, "options");
@@ -283,5 +309,22 @@ class AutoForm
         }
 
         return $parts[0] . $insert . $parts[2];
+    }
+    
+    function getOptionsList( array $field  ):array|bool{
+
+        //return input unaltered if the option option (duh) isn't set
+        if (empty($field['options'])) {
+
+            return false;
+        }
+
+        if (isset($field['options']['table']) && isset($field['options']['nameColumn'])) {
+
+            return $this->database->getOptionsFromDb($field);
+        } else {
+
+            return $field['options'];
+        }        
     }
 }

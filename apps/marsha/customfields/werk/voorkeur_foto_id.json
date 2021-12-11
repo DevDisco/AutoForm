@@ -1,0 +1,9 @@
+{
+  "component": "select",
+  "options": {
+    "table": "foto",
+    "nameColumn": "titel",
+    "valueColumn": "id"
+  },
+  "label": "Voorkeursfoto"
+}
