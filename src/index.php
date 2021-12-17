@@ -5,7 +5,7 @@ $editor = new Editor($database);
 
 //Logger::toLog($database->showTable(), "table");
 //Logger::toLog($fieldList->get(), "fl");
-Logger::toLog($_SESSION, "session");
+//Logger::toLog($_SERVER, "server");
 Logger::toLog($config, "config");
 
 

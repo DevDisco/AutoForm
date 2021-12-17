@@ -6,10 +6,15 @@ class Request
     private array $cleanPost = [];
     private array $cleanGet = [];
     private array $fieldList = [];
+    private Config $config;
 
+
+    //todo: can I get rid of public and use SimpleError as above?
     public function __construct(public Fields $fields, public SimpleError $error)
     {
         $this->fieldList = $fields->get();
+        $this->config = $fields->database->config;
+        
         //Logger::toLog($fields,"fields");
     }
 
@@ -269,10 +274,12 @@ class Request
 
             if ($field['type'] === "file") {
 
-                $path = $field['path'] ?? false;
+                $path = $this->config->UPLOAD_FOLDER.($field['path'] ?? "");
                 $key  = $field['name'];
                 $prefill = ( Session::getCurrentId() && $cleanPost[$field['name']]);
 
+                Logger::toLog($path, "path");
+                
                 if ($prefill){
 
                     Logger::toLog("Keep current file", "processFiles");

@@ -5,6 +5,6 @@
   "maxfilesize": 1048576,
   "width": "<1000",
   "height": "<1000",
-  "path": "uploads/",
+  "path": "",
   "label": "Bestand"
 }

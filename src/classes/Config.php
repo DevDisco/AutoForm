@@ -2,7 +2,7 @@
 
 /**
  * Reads config.json and assigns its properties to itself,
- * so a json key becomes a key of the config object
+ * ie: every json key becomes a key of the config object
  */
 class Config
 {
@@ -12,36 +12,25 @@ class Config
 
     public function __construct()
     {
-        $currentTable = Request::getTable();
-        $currentId = Request::getID();
-        $configFile = file_get_contents("../config.json");
-        $json = json_decode($configFile, false);
+       
+        $this->readConfig();
 
-        //store the contents of the config file on this object
-        foreach ($json as $key => $value) {
+        //override with prod settings
+        if ($_SERVER['SERVER_NAME'] !== "localhost") {
 
-            $this->$key = $value;
+            $this->readConfig(CONFIG_FILE_PROD);
         }
-
-        //if no current table is selected, pick the first one from the list
-        if (!$currentTable) {
-
-            $firstKey = array_key_first((array)$this->TABLE);
-            $this->currentTable = $firstKey;
-        } else {
-
-            $this->currentTable = $currentTable;
-        }
-
-        if ($currentId) {
-            $this->currentId = $currentId;
-        }
+        
+        $this->patchUploadFolder();
+        $this->initCurrentId();   
+        $this->initCurrentTable();
     }
 
     public function getCurrentTable(): string|bool
     {
         return $this->currentTable;
     }
+    
     public function setCurrentTable(string $table): void
     {
         $this->currentTable = $table;
@@ -52,6 +41,9 @@ class Config
         return $this->currentId;
     }
 
+    /**
+     * Returns editor settings for currently selected table
+     */
     public function getEditorFields(): bool|array
     {
         $currentTable = $this->getCurrentTable();
@@ -59,5 +51,63 @@ class Config
         $fields = $this->EDITOR->SHOW_TABLE_FIELDS->$currentTable ?? [];
 
         return empty($fields) ? false : $fields;
+    }
+    
+    /**
+     * Reads json config file and stores its values on this object
+     */
+    private function readConfig( string $file = CONFIG_FILE_DEV ): void{
+
+        $configFile = file_get_contents($file);
+
+        $json = json_decode($configFile, false);
+
+        foreach ($json as $key => $value) {
+
+            $this->$key = $value;
+        }        
+    }
+
+    /**
+     * Adds / to the end of the path if needed
+     */
+    private function patchUploadFolder():void{
+    
+        $end = substr( $this->UPLOAD_FOLDER, -1 );
+        
+        if ( $end !== "\\" ){
+
+            $this->UPLOAD_FOLDER = $this->UPLOAD_FOLDER."\\";
+        }
+    }
+    
+    /**
+     * Stores currently selected table on this object
+     */
+    private function initCurrentTable():void{
+
+        $currentTable = Request::getTable();
+        
+        //if no current table is selected, pick the first one from the list
+        if (!$currentTable) {
+
+            $firstKey = array_key_first((array)$this->TABLE);
+            $this->currentTable = $firstKey;
+        } else {
+
+            $this->currentTable = $currentTable;
+        }
+    }
+
+    /**
+     * Stores current id on this object
+     */
+    private function initCurrentId(){
+
+        $currentId = Request::getID();
+        
+        if ($currentId) {
+            $this->currentId = $currentId;
+        }           
     }
 }

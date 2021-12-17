@@ -6,6 +6,10 @@ const CLASS_FOLDER = SOURCE_FOLDER."classes/";
 const APP_FOLDER = "../";
 const TEMPLATES_FOLDER = SOURCE_FOLDER."templates/";
 
+//config files
+const CONFIG_FILE_DEV = "../config.json";
+const CONFIG_FILE_PROD = "../config.prod.json";
+
 
 
 
