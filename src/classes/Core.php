@@ -55,13 +55,13 @@ class Core
             $result = true;
         }
 
-        Logger::toLog(
-            [
-                'condition' => $condition ?? "-", 'value' => $value ?? "-", 'match' => $match ??
-                    "-",  'result' => $result,  'part' => $part
-            ],
-            "checkAgainstDimension"
-        );
+        // Logger::toLog(
+        //     [
+        //         'condition' => $condition ?? "-", 'value' => $value ?? "-", 'match' => $match ??
+        //             "-",  'result' => $result,  'part' => $part
+        //     ],
+        //     "checkAgainstDimension"
+        // );
 
         return $result;
     }

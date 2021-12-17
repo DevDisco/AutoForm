@@ -2,4 +2,5 @@
     <h1 class="text-center">&nbsp;</h1>
 
     <?= $formHtml ?>
+    <?= $editTable ?>
 </div>

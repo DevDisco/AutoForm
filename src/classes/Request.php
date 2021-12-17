@@ -23,7 +23,7 @@ class Request
 
         foreach ($this->fieldList as $field) {
 
-            Logger::toLog($field, "field");
+            //Logger::toLog($field, "field");
 
             $succes = !$this->validateInput($field) ? false : $succes;
 
@@ -131,7 +131,18 @@ class Request
 
         if ($type === "file") {
             
-
+            if (Session::getCurrentId()){
+                
+                //we're updating, check if text input has been set
+                $prefillValue = $_POST["prefill_".$name] ?? false;
+                
+                //
+                if ( $postValue === $prefillValue){
+                    
+                    return true;
+                }
+            }
+            
             if (!isset($_FILES[$name])) {
 
                 $this->error->setError("Upload: No file can be found for " . $name . ".");
@@ -143,7 +154,7 @@ class Request
             } else if ( $component === "input_image"){
 
                 $imageArray = getimagesize($_FILES[$name]['tmp_name']);
-                Logger::toLog($imageArray);
+                //Logger::toLog($imageArray);
 
                 $width ?? false;
                 $heigth ?? false;
@@ -151,7 +162,7 @@ class Request
                 if ( !Core::checkAgainstDimension($width, $imageArray[0]) ||
                      !Core::checkAgainstDimension($height, $imageArray[1]) ) {
 
-                    $error = "There is something wrong with the dimensions of the uploaded image. The image should meet these conditions: width must be ".$width." pixels, height must be ".$height." pixels";
+                    $error = "There is something wrong with the dimensions of the uploaded image. The image should meet these conditions: width must be ".htmlentities($width) ." pixels, height must be ". htmlentities($height)." pixels";
 
                     $this->error->setError(rtrim($error, ",").". ");
                     
@@ -161,6 +172,41 @@ class Request
         }
 
         return true;
+    }
+
+    /**
+     * Returns the id from a GET or POST request as an integer
+     * Returns false if no valid id is found
+     * An id must be an integer string value larger than 0
+     */
+    public static function getID(): int|bool
+    {
+
+        if ($_SERVER['REQUEST_METHOD'] === "GET" && self::isValidID($_GET['id'] ?? false)) {
+
+            return (int)$_GET['id'];
+        } else if ($_SERVER['REQUEST_METHOD'] === "POST" && self::isValidID($_POST['id'] ?? false)) {
+
+            return (int)$_POST['id'];
+        } else {
+
+            return false;
+        }
+    }
+
+    /**
+     * Helper function for getID
+     */
+    private static function isValidID(string|bool $value): bool
+    {
+
+        //mind that id from $_GET is a string, not an int.
+        if ((ctype_digit($value)) && (int)$value > 0) {
+
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -208,6 +254,8 @@ class Request
 
         return false;
     }
+    
+    
 
     /**
      * Checks cleanPost to see if there are any file inputs,
@@ -216,15 +264,20 @@ class Request
      */
     public function processFiles(array $cleanPost, array $fieldList): array
     {
-
+        
         foreach ($fieldList as $field) {
 
             if ($field['type'] === "file") {
 
                 $path = $field['path'] ?? false;
                 $key  = $field['name'];
+                $prefill = ( Session::getCurrentId() && $cleanPost[$field['name']]);
 
-                if ($path) {
+                if ($prefill){
+
+                    Logger::toLog("Keep current file", "processFiles");
+                }
+                else if ($path) {
 
                     if (is_dir($path)) {
                         
@@ -248,11 +301,11 @@ class Request
                         }
                         
 
-                        Logger::toLog($path, "path");
-                        Logger::toLog($cleanPost, "cleanPost");
-                        Logger::toLog($_POST, "_POST");
-                        Logger::toLog($_FILES, "_FILES");
-                        Logger::toLog($filename, "uniqid");
+                        //Logger::toLog($path, "path");
+                        //Logger::toLog($cleanPost, "cleanPost");
+                        //Logger::toLog($_POST, "_POST");
+                        //Logger::toLog($_FILES, "_FILES");
+                        //Logger::toLog($filename, "uniqid");
                         //process upload
                         
                     } else {

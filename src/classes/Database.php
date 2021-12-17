@@ -28,18 +28,19 @@ class Database
             $error->showAndAbort();
         }
     }
-    
-    public function read(string $sql, array $params = [], int $fetchMode = PDO::FETCH_ASSOC ): bool|array{
-    
-        $stmt = $this->prepareExecute($sql, $params );
-         
+
+    public function read(string $sql, array $params = [], int $fetchMode = PDO::FETCH_ASSOC): bool|array
+    {
+
+        $stmt = $this->prepareExecute($sql, $params);
+
         try {
-            return $stmt->fetchAll($fetchMode); 
+            return $stmt->fetchAll($fetchMode);
         } catch (\PDOException $th) {
             Logger::toLog($th->getMessage());
             $this->error->setError("Database: fetch query failed.", $th->getCode());
             $this->error->showAndAbort();
-        }        
+        }
     }
 
 
@@ -51,8 +52,8 @@ class Database
             Logger::toLog($th->getMessage());
             $this->error->setError("Database: fetch query failed.", $th->getCode());
             $this->error->showAndAbort();
-        } 
-        return true; 
+        }
+        return true;
     }
 
 
@@ -65,7 +66,7 @@ class Database
             $stmt = $this->pdo->prepare($sql);
         } catch (\PDOException $th) {
             Logger::toLog($th->getMessage());
-            $this->error->setError("Database: prepare query failed.", $th->getCode() );
+            $this->error->setError("Database: prepare query failed.", $th->getCode());
             $this->error->showAndAbort();
         }
 
@@ -76,7 +77,7 @@ class Database
             $this->error->setError("Database: execute query failed.", $th->getCode());
             $this->error->showAndAbort();
         }
-        
+
         return $stmt;
     }
 
@@ -85,12 +86,28 @@ class Database
         return $this->read("SHOW FULL COLUMNS FROM " . $this->config->getCurrentTable());
     }
 
-    public function insertFormData( Request $request ): bool
+    public function selectEditRows(): array|bool
+    {
+        $fields = $this->config->getEditorFields();
+
+        if (!$fields) {
+
+            return false;
+        }
+
+        $fields = "id," . implode(",", $fields);
+
+        Logger::toLog($fields, "fields");
+
+        return $this->read("SELECT $fields FROM " . $this->config->getCurrentTable());
+    }
+
+    public function insertFormData(Request $request): bool
     {
 
         $cleanPost =  $request->getCleanPost();
         $fieldList = $request->fields->get();
-        $table = $this->config->getCurrentTable();
+        $table = Session::getCurrentTable();
 
         //I could integrate this with getCleanPost()
         $cleanPost = $request->processFiles($cleanPost, $fieldList);
@@ -100,11 +117,30 @@ class Database
         $namedParams = implode(",", array_map(fn ($attr) => ":$attr", $keys));
 
         $sql = "INSERT INTO $table ($columnNames) VALUES ($namedParams)";
-        
+
         return $this->write($sql, $cleanPost);
+    }
+
+    public function updateFormData(Request $request): bool
+    {
+
+        $cleanPost =  $request->getCleanPost();
+        $fieldList = $request->fields->get();
+        $table = Session::getCurrentTable();
+        $id = Session::getCurrentId();
+
+        //I could integrate this with getCleanPost()
+        $cleanPost = $request->processFiles($cleanPost, $fieldList);
+        $params = array_merge($cleanPost, ["id"=>$id]);
+        $keys = array_keys($cleanPost);
+        $namedParams = implode(",", array_map(fn ($attr) => "$attr=:$attr", $keys));
         
-        //$stmt = $this->pdo->prepare($sql);
-        //return $stmt->execute($cleanPost);
+        $sql = "UPDATE $table SET $namedParams WHERE id=:id";
+Logger::toLog($sql, "sql");
+        Logger::toLog($params, "params");
+        return $this->write($sql, $params);
+
+        return false;
     }
 
     public function getOptionsFromDb(array $field): array|bool
@@ -139,5 +175,12 @@ class Database
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute();
         return $stmt->fetchColumn();
+    }
+
+    public function selectRecord(string $table, int $id): bool|array
+    {
+        $sql = "SELECT * FROM $table WHERE id=:id";
+        $params = [":id" => $id];
+        return $this->read($sql, $params);
     }
 }

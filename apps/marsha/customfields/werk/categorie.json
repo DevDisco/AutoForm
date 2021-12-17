@@ -3,7 +3,7 @@
   "options": {
     "table": "categorie_werk",
     "nameColumn": "titel",
-    "valueColumn": "id"
+    "valueColumn": "tag"
   },
   "label": "Soort werk"
 }

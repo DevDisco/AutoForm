@@ -1,6 +1,8 @@
 <?php
 
 $request = new Request($fields, $error);
+Logger::toLog($_POST, "_POST");
+Logger::toLog($_FILES, "_FILES");
 
 if ($_SERVER['REQUEST_METHOD'] === "POST") {
     
@@ -10,13 +12,22 @@ if ($_SERVER['REQUEST_METHOD'] === "POST") {
     
     if ($isValidated ){
          
-        $isInserted = $database->insertFormData($request);
+        if ( Session::getCurrentId() ){
+
+            $success = $database->updateFormData($request);
+        }
+        else{
+            
+            $success = $database->insertFormData($request);
+        }
         
-        if ($isInserted){
+        
+        if ($success){
             
             $title = "Success!";
             $message = "Your form has been submitted succesfully.";
-            Session::unsetCleanForm();
+            Session::unsetCleanPost();
+            Session::unsetPrefill();
         }
         
         //what if not?
@@ -27,7 +38,8 @@ if ($_SERVER['REQUEST_METHOD'] === "POST") {
 
         $title = "Error!";
         $message = ($error->getErrorArray()['message'] ?? "");  
-        //return cleanPost and prefill form       
+        Session::setPrefill();
+        Session::unsetCleanPost();   
     }
     
 } else {

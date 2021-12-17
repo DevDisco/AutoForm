@@ -19,7 +19,7 @@ class AutoForm
         $form = file_get_contents(TEMPLATES_FOLDER."components/form.php");
         $inputs = "";
         $enctype = "";
-        Logger::toLog($this->fieldList, "fieldList");
+        //Logger::toLog($this->fieldList, "fieldList");
 
         foreach ($this->fieldList as $field) {
 
@@ -30,35 +30,37 @@ class AutoForm
 
                 //this is for checkboxes and radio buttons
                 $input = $this->createRepeatingInput($field, $input);
-            } else {
+            } else if ($field['type'] === "file") {
+
+                $enctype = "enctype='multipart/form-data'";
+                $input = $this->createFileInput($field, $input);
+            }
+            else {
 
                 $input = $this->createSingleInput($field, $input);
             }
 
-            if ($field['type'] === "file") {
-
-                $enctype = "enctype='multipart/form-data'";
-            }
+            
 
             $inputs .= $input;
         }
 
-
-
         $table = $this->database->config->getCurrentTable();
+        $id = $this->database->config->getCurrentId();
         $form = str_replace("{{table}}", $table, $form);
+        $form = str_replace("{{id}}", $id, $form);
         $form = str_replace("{{inputs}}", $inputs, $form);
         $form = str_replace("{{enctype}}", $enctype, $form);
 
         Session::setCurrentTable($table);
-        //Session::unsetCleanForm();
+        Session::setCurrentId($id);
+        Session::unsetPrefill();
 
         return $form;
     }
 
     private function parseAttributes(array $field, string $input, bool $setRequired = true): string
     {
-
         foreach ($field as $key => $value) {
 
             if (is_array($value)) {
@@ -96,7 +98,7 @@ class AutoForm
 
         $value = $field['value'] ?? "";
 
-        $prefill = Session::getCleanPost()[$field['name']] ?? false;
+        $prefill = Session::getPrefill()[$field['name']] ?? false;
 
         //Logger::toLog(Session::getCleanPost(), "getCleanPost");
 
@@ -110,15 +112,13 @@ class AutoForm
 
     private function isSelected(array $field, string $value): bool
     {
-
-        //Logger::toLog($field['name'].", value=$value, default=".$field['value'], "test");
-
         //preset from database or custom field
         $default = $field['value'];
-        
-        //used to fill a field when redirected to form after a failed post
-        $prefill = Session::getCleanPost()[$field['name']] ?? null;
 
+        //used to fill a field when redirected to form after a failed post
+        $prefill = Session::getPrefill()[$field['name']] ?? null;
+
+        //Logger::toLog($field['name'] . ", value=$value, default=" . $field['value']. ", prefill=" . $prefill, "test");
         
         if ($prefill !== null && strpos($prefill, "|")) {
 
@@ -157,7 +157,40 @@ class AutoForm
         return $input . "\n";
     }
 
-    //creates a radion or checkbox group from a one-dimensional array
+
+    private function createFileInput(array $field, string $input): string
+    {
+        $label = $this->cleanLabel($field['name'], $field);
+        $value = $this->getPresetValue($field);
+
+        if ($field['required']) {
+
+            $label .= " *";
+        }
+        
+        if ( $value ){
+
+            $input = str_replace("{{disabled}}", "disabled", $input);
+            $input = str_replace("{{class_input}}", "d-none", $input);
+            $input = str_replace("{{class_prefill}}", "d-flex", $input);
+        }
+        else{
+
+            $input = str_replace("{{class_input}}", "d-block", $input);
+            $input = str_replace("{{class_prefill}}", "d-none", $input);            
+        }
+        
+        $input = str_replace("{{label}}", $label, $input);
+        $input = str_replace("{{instructions}}", $this->createInstructions($field), $input);
+        $input = str_replace("{{id}}", $field['name'], $input);
+        $input = str_replace("{{value}}", $value, $input);
+        $input = $this->parseAttributes($field, $input);
+        $input = $this->cleanUp($input);
+
+        return $input . "\n";
+    }
+
+    //creates a radio or checkbox group from a one-dimensional array
     //ie: value and label are the same
     private function createRepeatingInput(array $field, string $input): string
     {
@@ -243,8 +276,8 @@ class AutoForm
             if ($component === "input_image") {
                 
                 $instructions = str_replace("{{?}}", $maxFileSize, $config->INSTRUCTIONS_IMAGE);
-                $instructions = str_replace("{{1}}", $width, $instructions);
-                $instructions = str_replace("{{2}}", $height, $instructions);
+                $instructions = str_replace("{{1}}", htmlentities($width), $instructions);
+                $instructions = str_replace("{{2}}", htmlentities($height), $instructions);
             } else {
 
                 $instructions = str_replace("{{?}}", $maxFileSize, $config->INSTRUCTIONS_FILE);
@@ -326,5 +359,11 @@ class AutoForm
 
             return $field['options'];
         }        
+    }
+    
+    //checks if  [LOCK_TABLE_FIELDS]->table->field is set in config
+    private function isDisabled(array $field ){
+    
+        
     }
 }

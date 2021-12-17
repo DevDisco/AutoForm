@@ -1,13 +1,18 @@
 <?php
 
 $navbar = new Navigation($config);
+$editor = new Editor($database);
 
 //Logger::toLog($database->showTable(), "table");
 //Logger::toLog($fieldList->get(), "fl");
-//Logger::toLog($_SESSION, "session");
-//Logger::toLog($config, "config");
+Logger::toLog($_SESSION, "session");
+Logger::toLog($config, "config");
 
+
+$editor->setPrefill();
 $formHtml = $form->createForm();
+
+$editTable = $editor->showAll();
 
 require_once TEMPLATES_FOLDER."header.php";
 require_once TEMPLATES_FOLDER."navbar.php";

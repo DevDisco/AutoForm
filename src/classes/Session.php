@@ -21,6 +21,34 @@ class Session
         return $_SESSION['cleanPost'] ?? [];
     }
 
+    public static function unsetCleanPost()
+    {
+
+        unset($_SESSION['cleanPost']);
+    }
+
+    //if prefill is false, copy cleanPost
+    public static function setPrefill(array|bool $prefill=false): void
+    {
+        if (!$prefill ){
+            $_SESSION['prefill'] = $_SESSION['cleanPost'];
+        }
+        else{ $_SESSION['prefill'] = $prefill;}
+    }
+
+    public static function getPrefill(): array
+    {
+
+        return $_SESSION['prefill'] ?? [];
+    }
+    
+
+    public static function unsetPrefill()
+    {
+
+        unset($_SESSION['prefill']);
+    }
+
     public static function setCurrentTable(string $currentTable): void
     {
 
@@ -33,10 +61,18 @@ class Session
         return $_SESSION['currentTable'];
     }
 
-
-    public static function unsetCleanForm()
+    public static function setCurrentId(int|bool $setCurrentId): void
     {
 
-        unset($_SESSION['cleanPost']);
+        $_SESSION['currentId'] = $setCurrentId;
     }
+
+    public static function getCurrentId(): int|bool
+    {
+
+        return $_SESSION['currentId'];
+    }
+
+    
 }
+

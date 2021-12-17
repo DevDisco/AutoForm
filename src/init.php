@@ -25,7 +25,7 @@ if (is_dir(CLASS_FOLDER)) {
 
 //call classes used in both index.php and process.php
 $session = new Session();
-$config = new Config(Request::getTable());
+$config = new Config();
 $error = new SimpleError();
 $database = new Database($config, $error);
 $fields = new Fields($database);

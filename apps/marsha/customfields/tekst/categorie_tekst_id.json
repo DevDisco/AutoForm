@@ -1,9 +1,0 @@
-{
-  "component": "select",
-  "options": {
-    "table": "categorie_tekst",
-    "nameColumn": "titel",
-    "valueColumn": "id"
-  },
-  "label": "Locatie"
-}

@@ -49,6 +49,9 @@ class Fields
             //the type field contains information about type, length and sign
             $parsedType = $this->parseSqlType($Type);
             $fl[$key]['type'] = $this->getInputType($parsedType);
+            
+            //Logger::toLog($Field." - ". $Type, "field, type" );
+            //Logger::toLog($parsedType, "parsedType" );
 
             //correct input and type for longer texts
             if ($fl[$key]['type'] === 'text' && $parsedType[1] > 64) {
@@ -94,7 +97,8 @@ class Fields
         }
 
         //ignore date fields with default set to current_timestamp()
-        if ($field['Default'] === "current_timestamp()") {
+        //difefrence between mySQL and MariaDB
+        if ($field['Default'] === "current_timestamp()" || $field['Default'] === "CURRENT_TIMESTAMP") {
 
             $this->ignoredList[] = $field['Field'];
             return true;
@@ -135,9 +139,9 @@ class Fields
 
         //correct for field length if that's set to a smaller value than default
         //there is probably a fancy math way of doing this...:(
-        $maxByLength = intval(str_repeat("9", $typeArray[1]));
+        //$maxByLength = intval(str_repeat("9", $typeArray[1]));
 
-        $max = ($maxByLength < $max) ? $maxByLength : $max;
+        //$max = ($maxByLength < $max) ? $maxByLength : $max;
 
         return $max;
     }
@@ -183,8 +187,13 @@ class Fields
 
     private function parseSqlType($sqlType): array
     {
+        //MySQL doesn't show int width if it's set to default
+        $signed = strpos( $sqlType, "unsigned")  === false ?: true;
+        
+        $strippedType = str_replace(" unsigned", "", $sqlType);
+ 
         //text and blob types have no length value
-        $typeArray = match ($sqlType) {
+        $typeArray = match ($strippedType) {
 
             "tinytext" => ['text', 255, false],
             "text" => ['text', 65535, false],
@@ -192,6 +201,10 @@ class Fields
             "blob" => ['file', "", false],
             "mediumblob" => ['file', "", false],
             "longblob" => ['file', "", false],
+            "tinyint" => ['tinyint', "4", $signed],
+            "smallint" => ['smallint', "6", $signed],
+            "mediumint" => ['mediumint', "9", $signed],
+            "int" => ['int', "11", $signed],
             default => []
         };
 
@@ -200,6 +213,7 @@ class Fields
             return $typeArray;
         }
 
+        //MariaDB always shows int width
         if (strpos($sqlType, ") ")) {
 
             //bit hacky, but it works
