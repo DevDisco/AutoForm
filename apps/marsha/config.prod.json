@@ -1,3 +1,4 @@
 {
-  "UPLOAD_FOLDER": "E:\\public\\react\\images\\uploads\\"
+  "UPLOAD_ROOT": "E:\\public\\react\\images\\",
+  "ALLOWED_IP": ["88.159.252.251"]
 }

@@ -25,6 +25,8 @@
     }
 
 
+    //todo: check image dimensions?
+    //https://stackoverflow.com/questions/8903854/check-image-width-and-height-before-upload-with-javascript
     function checkUpload(event) {
 
         const fileInput = event.target;

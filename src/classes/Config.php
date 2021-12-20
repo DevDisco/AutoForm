@@ -72,12 +72,21 @@ class Config
      * Adds / to the end of the path if needed
      */
     private function patchUploadFolder():void{
-    
-        $end = substr( $this->UPLOAD_FOLDER, -1 );
         
-        if ( $end !== "\\" ){
+        $uploadRoot = $this->UPLOAD_ROOT  ?? false;
+        
+        if ($uploadRoot){
+            
+            $end = substr( $this->UPLOAD_ROOT, -1 );
+            
+            if ( $end !== "\\" ){
 
-            $this->UPLOAD_FOLDER = $this->UPLOAD_FOLDER."\\";
+                $this->UPLOAD_ROOT = $this->UPLOAD_ROOT."\\";
+            }            
+        }
+        else{
+            
+            $this->UPLOAD_ROOT = false;
         }
     }
     

@@ -98,7 +98,6 @@ class Editor{
         }
         
         Session::setPrefill($record[0]);
-        Logger::toLog(Session::getPrefill(), "setPrefill");
         return true;
     }
 }

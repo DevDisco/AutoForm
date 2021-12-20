@@ -97,8 +97,6 @@ class Database
 
         $fields = "id," . implode(",", $fields);
 
-        Logger::toLog($fields, "fields");
-
         return $this->read("SELECT $fields FROM " . $this->config->getCurrentTable());
     }
 
@@ -136,11 +134,8 @@ class Database
         $namedParams = implode(",", array_map(fn ($attr) => "$attr=:$attr", $keys));
         
         $sql = "UPDATE $table SET $namedParams WHERE id=:id";
-Logger::toLog($sql, "sql");
-        Logger::toLog($params, "params");
+        
         return $this->write($sql, $params);
-
-        return false;
     }
 
     public function getOptionsFromDb(array $field): array|bool

@@ -1,8 +1,6 @@
 <?php
 
 $request = new Request($fields, $error);
-Logger::toLog($_POST, "_POST");
-Logger::toLog($_FILES, "_FILES");
 
 if ($_SERVER['REQUEST_METHOD'] === "POST") {
     
@@ -29,6 +27,14 @@ if ($_SERVER['REQUEST_METHOD'] === "POST") {
             Session::unsetCleanPost();
             Session::unsetPrefill();
         }
+        else{
+
+            Logger::toLog($_POST, "_POST");
+            Logger::toLog($_FILES, "_FILES");
+            Logger::toLog($database->showTable(), "table");
+            Logger::toLog($fieldList->get(), "fl");
+            Logger::toLog($config, "config");            
+        }
         
         //what if not?
         
@@ -40,6 +46,8 @@ if ($_SERVER['REQUEST_METHOD'] === "POST") {
         $message = ($error->getErrorArray()['message'] ?? "");  
         Session::setPrefill();
         Session::unsetCleanPost();   
+        
+
     }
     
 } else {

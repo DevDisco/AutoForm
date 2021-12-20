@@ -36,11 +36,12 @@ class Request
         }
 
         Session::setCleanPost($this->cleanPost);
+Logger::toLog($this->cleanPost, "cleanPost");
         
         if( !$succes){
             Logger::toLog($_POST, "_POST");
             Logger::toLog($_FILES, "_FILES");
-            Logger::toLog($this->cleanPost, "cleanPost");
+            
         }
 
         return $succes;
@@ -73,9 +74,7 @@ class Request
 
         $postValue = match ($type) {
 
-            "number" => filter_var(
-                $postValue,
-                FILTER_SANITIZE_NUMBER_INT),
+            "number" => $this->sanitizeInt($postValue),
             "url" => filter_var($postValue, FILTER_SANITIZE_URL),
             "email" => filter_var($postValue, FILTER_SANITIZE_EMAIL),
             default => $postValue
@@ -83,10 +82,25 @@ class Request
 
         return $postValue;
     }
+    
+    private function sanitizeInt( $postValue ){
+
+        $postValue = filter_var(
+            $postValue,
+            FILTER_SANITIZE_NUMBER_INT
+        );
+        
+        if ($postValue == ""){
+
+            $postValue = 0;
+        }
+        
+        return $postValue;
+    }
 
     private function validateInput(array $field): bool
     {
-       extract($field);
+        extract($field);
 
         $postValue = $_POST[$name] ?? null;
 
@@ -136,22 +150,27 @@ class Request
 
         if ($type === "file") {
             
+            //todo: use prefill checker
+            
             if (Session::getCurrentId()){
                 
                 //we're updating, check if text input has been set
-                $prefillValue = $_POST["prefill_".$name] ?? false;
-                
-                //
-                if ( $postValue === $prefillValue){
+                $prefillValue = $_POST["prefill_".$name];
+
+                if ( $prefillValue !== "" && $postValue === $prefillValue){
                     
                     return true;
                 }
             }
-            
+
             if (!isset($_FILES[$name])) {
 
                 $this->error->setError("Upload: No file can be found for " . $name . ".");
                 return false;
+            } else if ($_FILES[$name]['name'] === "" && !$required ) {
+
+                //empty upload on updating an optional file input
+                return true;
             } else if ($_FILES[$name]['size'] > $maxfilesize) {
 
                 $this->error->setError("Upload: The uploaded file for " . $name . " is too large.");
@@ -260,8 +279,41 @@ class Request
         return false;
     }
     
-    
+    private function checkUploadState( string $inputName, string $postValue ){
 
+        $prefillValue = $_POST["prefill_" . $inputName] ?? "";
+        $name_FILES = $_FILES[$inputName]['name'] ?? "";
+        
+        if ( !Session::getCurrentId() || $prefillValue === "" ) {
+
+            //not an update
+            if ( $name_FILES === "" ){
+                //empty optional file, do nothing
+                return UPL_NONE;                
+            }
+            else{
+                //upload file
+                return UPL_UPLOAD;                
+            }
+        } 
+        else if ( $postValue === $prefillValue ) {
+
+            //update, nothing changed to the file
+            return UPL_KEEP;
+        } else if ( $postValue === "" && $name_FILES === "" ){
+
+            //update, file was deleted, nothing new chosen
+            return UPL_DELETE;
+        } else if ($postValue === "" && $name_FILES !== "") {
+
+            //update, file was deleted, new file chosen
+            return UPL_DELETE_UPLOAD;
+        }
+        
+        return UPL_NONE;
+    }
+
+    //todo: make separate class
     /**
      * Checks cleanPost to see if there are any file inputs,
      * and deals with either base64 conversion for database inserts,
@@ -273,29 +325,39 @@ class Request
         foreach ($fieldList as $field) {
 
             if ($field['type'] === "file") {
-
-                $path = $this->config->UPLOAD_FOLDER.($field['path'] ?? "");
+            
+                $path = $this->config->UPLOAD_ROOT ?? false;
                 $key  = $field['name'];
-                $prefill = ( Session::getCurrentId() && $cleanPost[$field['name']]);
-
-                Logger::toLog($path, "path");
+                $prefill = $this->checkUploadState($key, $cleanPost[$key]);
+                $prefillValue = $_POST["prefill_" . $key] ?? "";
                 
-                if ($prefill){
+                if ( $prefill === UPL_KEEP ){
 
                     Logger::toLog("Keep current file", "processFiles");
                 }
+                else if ( $prefill === UPL_NONE ){
+
+                    Logger::toLog("Empty optional file input", "processFiles");
+                } 
+                else if ($prefill === UPL_DELETE) {
+
+                    Logger::toLog("Delete orphaned file ". $prefillValue, "processFiles");
+                    $this->deleteFile($path . $prefillValue);
+                }
                 else if ($path) {
+                    
+                    $path .= ($field['path'] ?? "");
 
                     if (is_dir($path)) {
-                        
-                           // File name
-                        $filename = $_FILES[$key]['name'];
+
+                        $filename = $this->createSafeFilename($path, $_FILES[$key]['name']);
 
                         //update cleanPost
                         $cleanPost[$key] = $filename;
 
                         // Location
                         $target_file = $path . $filename;
+                        
 
                         // Upload file
                         if (!move_uploaded_file(
@@ -305,20 +367,30 @@ class Request
     
                             //error
                             $this->error->setError("Can't move file to folder $path", 500);
+                            $this->error->showAndAbort();
+                        }
+
+                        Logger::toLog("Uploaded " . $target_file, "processFiles");
+
+                        if ($prefill === UPL_DELETE_UPLOAD) {
+                            
+                            Logger::toLog("Delete original file " . $prefillValue, "processFiles");
+                            $this->deleteFile($path . $prefillValue);
                         }
                         
 
-                        //Logger::toLog($path, "path");
-                        //Logger::toLog($cleanPost, "cleanPost");
-                        //Logger::toLog($_POST, "_POST");
-                        //Logger::toLog($_FILES, "_FILES");
-                        //Logger::toLog($filename, "uniqid");
+                        
+                        Logger::toLog($cleanPost, "cleanPost");
+                        Logger::toLog($_POST, "_POST");
+                        Logger::toLog($_FILES, "_FILES");
+                        Logger::toLog($fieldList, "fieldList");
                         //process upload
                         
                     } else {
 
                         //error
                         $this->error->setError("Can't find upload folder $path", 500);
+                        $this->error->showAndAbort();
                     }
                 } else {
 
@@ -326,10 +398,41 @@ class Request
                     $image_base64 = base64_encode(file_get_contents($_FILES[$key]['tmp_name']));
                     $image = "data:" . $_FILES[$key]['type'] . ";base64," . $image_base64;
                     $cleanPost[$key] = $image;
+                    Logger::toLog("Insert image as base64", "processFiles");
                 }
             }
         }
 
         return $cleanPost;
     }
+    
+    private function deleteFile( $path ){
+    
+        if (is_file($path)){
+            
+            unlink($path);
+        }
+    }
+    
+    //todo: check length sql field
+    private function createSafeFilename( string $path, string $filename, int $rand=0 ):string{
+
+        $filename = str_replace(' ', '_', $filename);
+        $filename = preg_replace('/[^a-zA-Z0-9\-\._]/', '', $filename);  
+        
+        if ( $rand > 0 ){
+
+            $pathinfo = pathinfo($path . $filename);
+            
+            $filename = $pathinfo['filename']."_".$rand.".". $pathinfo['extension'];
+        }
+        
+        if ( is_file( $path.$filename )){
+            
+            return $this->createSafeFilename($path, $filename, $rand=rand(1000,9999) );
+        }
+        
+        return $filename;
+    }
+    
 }

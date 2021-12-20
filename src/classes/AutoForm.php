@@ -3,20 +3,29 @@
 class AutoForm
 {
     private Database $database;
+    private Config $config;
     private array $fieldList;
+    private int $currentId;
+    private string $currentTable;
+    private array $blockedTags;
 
-    public function __construct(private Fields $fields) {
-        
+    public function __construct(private Fields $fields)
+    {
+
         $this->fieldList = $fields->get();
         $this->database = $fields->database;
-
-        //Logger::toLog($this->table, "table");
+        $this->config = $fields->database->config;
+        
+        $table = $this->config->getCurrentTable();
+        $this->currentTable = $table;
+        $this->currentId = $this->config->getCurrentId();
+        $this->blockedTags = $this->config->EDITOR->LOCK_TABLE_FIELDS->$table ?? [];
     }
 
 
     public function createForm(): string
     {
-        $form = file_get_contents(TEMPLATES_FOLDER."components/form.php");
+        $form = file_get_contents(TEMPLATES_FOLDER . "components/form.php");
         $inputs = "";
         $enctype = "";
         //Logger::toLog($this->fieldList, "fieldList");
@@ -34,26 +43,23 @@ class AutoForm
 
                 $enctype = "enctype='multipart/form-data'";
                 $input = $this->createFileInput($field, $input);
-            }
-            else {
+            } else {
 
                 $input = $this->createSingleInput($field, $input);
             }
 
-            
+
 
             $inputs .= $input;
         }
 
-        $table = $this->database->config->getCurrentTable();
-        $id = $this->database->config->getCurrentId();
-        $form = str_replace("{{table}}", $table, $form);
-        $form = str_replace("{{id}}", $id, $form);
+        $form = str_replace("{{table}}", $this->currentTable, $form);
+        $form = str_replace("{{id}}", $this->currentId, $form);
         $form = str_replace("{{inputs}}", $inputs, $form);
         $form = str_replace("{{enctype}}", $enctype, $form);
 
-        Session::setCurrentTable($table);
-        Session::setCurrentId($id);
+        Session::setCurrentTable($this->currentTable);
+        Session::setCurrentId($this->currentId);
         Session::unsetPrefill();
 
         return $form;
@@ -118,22 +124,36 @@ class AutoForm
         //used to fill a field when redirected to form after a failed post
         $prefill = Session::getPrefill()[$field['name']] ?? null;
 
-        //Logger::toLog($field['name'] . ", value=$value, default=" . $field['value']. ", prefill=" . $prefill, "test");
         
+
         if ($prefill !== null && strpos($prefill, "|")) {
 
             $prefillArray = explode("|", $prefill);
             return in_array($value, $prefillArray) ?: false;
-        } else if ($prefill !== null && $prefill == $value) {
-
+        } else if ($prefill !== null && $prefill === $value) {
+            //Logger::toLog($field['name'] . ", value=$value, default=" . $field['value'] . ", prefill=" . $prefill, "test1");
             return true;
-        }
-        else if ($default == $value ) {
-
+        } else if ($prefill === null && $default === $value) {
+            //Logger::toLog($field['name'] . ", value=$value, default=" . $field['value'] . ", prefill=" . $prefill, "test2");
             return true;
         }
 
         return false;
+    }
+
+    private function getReadOnly(array $field, string $input): string
+    {
+        $input =  false;
+        
+        
+        
+        //Logger::toLog(, "getDisabled");
+
+        if ( in_array( $field['name'], $this->blockedTags ) && $this->currentId > 0 && $input !== "" ){
+            
+            return "readonly";
+        }
+        return "";
     }
 
     private function createSingleInput(array $field, string $input): string
@@ -149,6 +169,7 @@ class AutoForm
 
         $input = str_replace("{{label}}", $label, $input);
         $input = str_replace("{{instructions}}", $this->createInstructions($field), $input);
+        $input = str_replace("{{readonly}}", $this->getReadOnly($field, $value), $input);
         $input = str_replace("{{id}}", $field['name'], $input);
         $input = str_replace("{{value}}", $value, $input);
         $input = $this->parseAttributes($field, $input);
@@ -167,19 +188,18 @@ class AutoForm
 
             $label .= " *";
         }
-        
-        if ( $value ){
+
+        if ($value) {
 
             $input = str_replace("{{disabled}}", "disabled", $input);
             $input = str_replace("{{class_input}}", "d-none", $input);
             $input = str_replace("{{class_prefill}}", "d-flex", $input);
-        }
-        else{
+        } else {
 
             $input = str_replace("{{class_input}}", "d-block", $input);
-            $input = str_replace("{{class_prefill}}", "d-none", $input);            
+            $input = str_replace("{{class_prefill}}", "d-none", $input);
         }
-        
+
         $input = str_replace("{{label}}", $label, $input);
         $input = str_replace("{{instructions}}", $this->createInstructions($field), $input);
         $input = str_replace("{{id}}", $field['name'], $input);
@@ -225,16 +245,16 @@ class AutoForm
             $label = $value;
             $valueColumn = $field['options']['valueColumn'] ?? false;
             $value = $valueColumn ? $key : $value;
-            $item = rtrim($parts[1]);        
-            
+            $item = rtrim($parts[1]);
+
             $item = str_replace("{{id}}", $id, $item);
             $item = str_replace("{{label}}", $label, $item);
             $item = str_replace("{{value}}", $value, $item);
             $item = str_replace("{{instructions}}", $instructions, $item);
 
             //if ($field['value'] == $option) {
-            if ($this->isSelected($field, $value) ) {
-
+            if ($this->isSelected($field, $value)) {
+                //Logger::toLog($field['name']."=".$value, "isSelected" );
                 $item = str_replace("{{checked}}", "checked", $item);
             }
 
@@ -245,7 +265,7 @@ class AutoForm
             $item = $this->cleanUp($item);
 
             $return .= $item . "\n";
-            
+
             ++$i;
         }
 
@@ -256,7 +276,7 @@ class AutoForm
     {
         extract($field);
         $instructions = "";
-        $config = $this->database->config;
+        $config = $this->config;
 
         if (is_array($options ?? false)) {
 
@@ -274,7 +294,7 @@ class AutoForm
             $maxFileSize = Core::getBytesAsSize($maxfilesize);
 
             if ($component === "input_image") {
-                
+
                 $instructions = str_replace("{{?}}", $maxFileSize, $config->INSTRUCTIONS_IMAGE);
                 $instructions = str_replace("{{1}}", htmlentities($width), $instructions);
                 $instructions = str_replace("{{2}}", htmlentities($height), $instructions);
@@ -343,8 +363,9 @@ class AutoForm
 
         return $parts[0] . $insert . $parts[2];
     }
-    
-    function getOptionsList( array $field  ):array|bool{
+
+    function getOptionsList(array $field): array|bool
+    {
 
         //return input unaltered if the option option (duh) isn't set
         if (empty($field['options'])) {
@@ -358,12 +379,11 @@ class AutoForm
         } else {
 
             return $field['options'];
-        }        
+        }
     }
-    
+
     //checks if  [LOCK_TABLE_FIELDS]->table->field is set in config
-    private function isDisabled(array $field ){
-    
-        
+    private function isDisabled(array $field)
+    {
     }
 }
