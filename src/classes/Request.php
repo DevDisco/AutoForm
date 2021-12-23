@@ -28,19 +28,17 @@ class Request
 
         foreach ($this->fieldList as $field) {
 
-            //Logger::toLog($field, "field");
-
             $succes = !$this->validateInput($field) ? false : $succes;
 
             $this->cleanPost[$field['name']] = $this->sanitizeInput($field);
         }
 
         Session::setCleanPost($this->cleanPost);
-        Logger::toLog($this->cleanPost, "cleanPost");
 
         if (!$succes) {
             Logger::toLog($_POST, "_POST");
             Logger::toLog($_FILES, "_FILES");
+            Logger::toLog($this->cleanPost, "cleanPost");
         }
 
         return $succes;

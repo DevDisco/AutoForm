@@ -1,4 +1,5 @@
 {
   "UPLOAD_ROOT": "E:\\public\\react\\images\\",
+  "UPLOAD_WEB_ROOT": "https://dcslob.nl/react/images/",
   "ALLOWED_IP": ["88.159.252.251"]
 }

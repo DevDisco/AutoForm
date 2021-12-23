@@ -58,7 +58,7 @@ class Session
     public static function getCurrentTable(): string
     {
 
-        return $_SESSION['currentTable'];
+        return $_SESSION['currentTable'] ?? "";
     }
 
     public static function setCurrentId(int|bool $setCurrentId): void

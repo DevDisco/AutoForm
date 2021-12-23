@@ -13,7 +13,7 @@
                 <span onClick="toggleFileInput('{{id}}')" class="input-group-text" id="delete-image"><i class="bi bi-trash"></i></span>
                 <input type="hidden" name="prefill_{{id}}" value="{{value}}" />
                 <input type="text" name="{{name}}" class="form-control" aria-label="image" aria-describedby="delete-image" value="{{value}}" readonly>
-                <span class="text-muted">This field already has a file attached to it. Delete the file if you want to replace it with a new one.</span>
+                <span class="text-muted">This field already has a <a href='{{url}}' target='image'>file</a> attached to it. Delete the file if you want to replace it with a new one.</span>
             </fieldset>
         </div>
     </div>

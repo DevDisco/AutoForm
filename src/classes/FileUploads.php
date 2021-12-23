@@ -1,5 +1,7 @@
 <?php
 
+//todo: create image resizer
+
 /**
  * The routines for fiule uploads are so different end extensive that 
  * I collect them here as static functions
@@ -64,14 +66,14 @@ class FileUploads
 
                         if ($prefill === UPL_DELETE_UPLOAD) {
 
-                            Logger::toLog("Delete original file " . $prefillValue, "processFiles");
+                            Logger::toLog("Deleted previous file " . $prefillValue, "processFiles");
                             Core::deleteFile($path . $prefillValue);
                         }
 
-                        Logger::toLog($cleanPost, "cleanPost");
-                        Logger::toLog($_POST, "_POST");
-                        Logger::toLog($_FILES, "_FILES");
-                        Logger::toLog($fieldList, "fieldList");
+                        //Logger::toLog($cleanPost, "cleanPost");
+                        //Logger::toLog($_POST, "_POST");
+                        //Logger::toLog($_FILES, "_FILES");
+                        //Logger::toLog($fieldList, "fieldList");
                         //process upload
 
                     } else {
@@ -167,16 +169,17 @@ class FileUploads
                     unlink($file);
                     Logger::toLog($record[$field['name']], "Successfully removed file");
                 }
+                else{
+
+                    Logger::toLog($record[$field['name']], "Could not find file to remove");
+                }
             }
         }
     }
     
-    public static function validateFileInput( Request $request, array $field, string $postValue ):bool{
+    public static function validateFileInput( Request $request, array $field, string|null $postValue ):bool{
 
         extract($field);
-        
-        Logger::toLog($_FILES[$name]);
-        return false;
 
         //todo: use prefill checker
 
@@ -206,7 +209,7 @@ class FileUploads
         } else if ($component === "input_image") {
 
             $imageArray = getimagesize($_FILES[$name]['tmp_name']);
-            Logger::toLog($imageArray);
+            //Logger::toLog($imageArray);
 
             $width ?? false;
             $heigth ?? false;
@@ -223,5 +226,7 @@ class FileUploads
                 return false;
             }
         }
+        
+        return true;
     }
 }

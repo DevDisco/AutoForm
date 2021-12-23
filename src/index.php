@@ -1,7 +1,7 @@
 <?php
 
 $navbar = new Navigation($config);
-$editor = new Editor($database);
+$editor = new Editor($database, $fields );
 
 $editor->setPrefill();
 

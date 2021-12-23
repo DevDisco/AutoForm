@@ -27,7 +27,7 @@ class AutoForm
         $form = file_get_contents(TEMPLATES_FOLDER . "components/form_$form.php");
         $inputs = "";
         $enctype = "";
-        Logger::toLog(empty(Session::getPrefill()), "prefill");
+        //Logger::toLog(empty(Session::getPrefill()), "prefill");
 
         foreach ($this->fieldList as $field) {
 
@@ -171,11 +171,12 @@ class AutoForm
         return $input . "\n";
     }
 
-
+    //todo: check if file exists, don't prefill if not (or warning)
     private function createFileInput(array $field, string $input): string
     {
         $label = $this->cleanLabel($field['name'], $field);
         $value = $this->getPresetValue($field);
+        $path = $this->config->UPLOAD_WEB_ROOT . $field['path'];
 
         if ($field['required']) {
 
@@ -187,6 +188,7 @@ class AutoForm
             $input = str_replace("{{disabled}}", "disabled", $input);
             $input = str_replace("{{class_input}}", "d-none", $input);
             $input = str_replace("{{class_prefill}}", "d-flex", $input);
+            $input = str_replace("{{url}}", $path.$value, $input);
         } else {
 
             $input = str_replace("{{class_input}}", "d-block", $input);
@@ -286,15 +288,7 @@ class AutoForm
             //todo: accepted file extensions? Seems to be restricted by input already.
             $maxFileSize = Core::getBytesAsSize($maxfilesize);
 
-            if ($component === "input_image") {
-
-                $instructions = str_replace("{{?}}", $maxFileSize, $config->INSTRUCTIONS_IMAGE);
-                $instructions = str_replace("{{1}}", htmlentities($width), $instructions);
-                $instructions = str_replace("{{2}}", htmlentities($height), $instructions);
-            } else {
-
-                $instructions = str_replace("{{?}}", $maxFileSize, $config->INSTRUCTIONS_FILE);
-            }
+            $instructions = str_replace("{{?}}", $maxFileSize, $config->INSTRUCTIONS_FILE);
         } else if ($type === "url") {
 
             $instructions = $config->INSTRUCTIONS_URL;

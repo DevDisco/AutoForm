@@ -4,6 +4,6 @@
     {{inputs}}
     <!-- End: don't change -->
     <div class="col-12">
-        <button class="btn btn-primary" id="submit" type="submit" onClick="checkForm(event)">Invoeren</button>
+        <button class="btn btn-primary" id="submit" type="submit" onClick="checkForm(event)">Toevoegen</button>
     </div>
 </form>

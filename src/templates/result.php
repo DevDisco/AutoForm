@@ -3,5 +3,5 @@
 
     <?= $message ?>
     
-    <p>You can close this page or return to the <a href="index.php">editor</a></p>
+    <p>You can close this page or return to the <a href="index.php?t=<?= Request::getTable(); ?>">editor</a></p>
 </div>

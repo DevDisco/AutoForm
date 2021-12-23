@@ -5,6 +5,6 @@
     {{inputs}}
     <!-- End: don't change -->
     <div class="col-12">
-        <button class="btn btn-primary" id="submit" type="submit" onClick="checkForm(event)">Aanpassen</button>
+        <button class="btn btn-primary" id="submit" type="submit" onClick="checkForm(event)">Wijzigen</button>
     </div>
 </form>

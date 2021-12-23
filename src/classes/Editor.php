@@ -7,10 +7,11 @@ class Editor
 
     private Config $config;
 
-    public function __construct(private Database $database)
+    public function __construct(private Database $database, private Fields $fields )
     {
 
         $this->config = $database->config;
+
     }
 
     public function showAll(): bool|string
@@ -47,9 +48,9 @@ class Editor
         $key = array_key_first($tableData);
         $row = $tableData[$key];
         $return = "\t<tr><th>&nbsp;</th>";
-        foreach ($row as $field => $value) {
+        foreach ($row as $key => $value) {
 
-            $return .= "<th scope='col'>" . $field . "</th>";
+            $return .= "<th scope='col'>" . $key . "</th>";
         }
         $return .= "<th>&nbsp;</th></tr>\n";
 
@@ -58,12 +59,27 @@ class Editor
 
     private function createShowAllRow(array $row, string $t): string
     {
-
         $return = "\t<tr>" . $this->createShowAllCheckbox($row, $t);
-        foreach ($row as $field => $value) {
+        
+        
+        $fieldList = $this->fields->get();
+        //Logger::toLog($fieldList);
+        foreach ($row as $key => $value) {
+            
+            $type = $fieldList[$key]['type'] ?? "";
 
-            $return .= "<td title=\"$field\">" . $value . "</td>";
+            if ( $type === "file" ){
+                
+                $path = $this->config->UPLOAD_WEB_ROOT. $fieldList[$key]['path'];
+
+                $return .= "<td title=\"$key\"><a href='$path$value' target='image'>" . $value . "</a></td>";
+            }
+            else{
+
+                $return .= "<td title=\"$key\">" . $value . "</td>";
+            }
         }
+        
         $return .= $this->createShowAllButtons($row['id'], $t) . "</tr>\n";
 
         return $return;

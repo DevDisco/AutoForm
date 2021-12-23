@@ -28,7 +28,7 @@ class Fields
     {
         $fl = [];
 
-        foreach ($this->tableView as $key => $field) {
+        foreach ($this->tableView as $field) {
 
             //id and auto-insert datefields can be ignored
             if ( $this->canIgnoreField($field) ){
@@ -36,6 +36,8 @@ class Fields
             }
             
             extract($field);
+            
+            $key = $Field;
 
             //convert sql field info to an array that will be used to 
             //create and validate the form
