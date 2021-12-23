@@ -15,7 +15,6 @@ class AutoForm
         $this->fieldList = $fields->get();
         $this->database = $fields->database;
         $this->config = $fields->database->config;
-        
         $table = $this->config->getCurrentTable();
         $this->currentTable = $table;
         $this->currentId = $this->config->getCurrentId();
@@ -23,12 +22,12 @@ class AutoForm
     }
 
 
-    public function createForm(): string
+    public function createForm(string $form="insert"): string
     {
-        $form = file_get_contents(TEMPLATES_FOLDER . "components/form.php");
+        $form = file_get_contents(TEMPLATES_FOLDER . "components/form_$form.php");
         $inputs = "";
         $enctype = "";
-        //Logger::toLog($this->fieldList, "fieldList");
+        Logger::toLog(empty(Session::getPrefill()), "prefill");
 
         foreach ($this->fieldList as $field) {
 
@@ -47,8 +46,6 @@ class AutoForm
 
                 $input = $this->createSingleInput($field, $input);
             }
-
-
 
             $inputs .= $input;
         }
@@ -101,7 +98,6 @@ class AutoForm
 
     private function getPresetValue(array $field): string
     {
-
         $value = $field['value'] ?? "";
 
         $prefill = Session::getPrefill()[$field['name']] ?? false;
@@ -143,10 +139,7 @@ class AutoForm
 
     private function getReadOnly(array $field, string $input): string
     {
-        $input =  false;
-        
-        
-        
+        $input =  false;  
         //Logger::toLog(, "getDisabled");
 
         if ( in_array( $field['name'], $this->blockedTags ) && $this->currentId > 0 && $input !== "" ){

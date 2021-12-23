@@ -55,14 +55,40 @@ class Core
             $result = true;
         }
 
-        // Logger::toLog(
-        //     [
-        //         'condition' => $condition ?? "-", 'value' => $value ?? "-", 'match' => $match ??
-        //             "-",  'result' => $result,  'part' => $part
-        //     ],
-        //     "checkAgainstDimension"
-        // );
-
         return $result;
+    }
+    
+    /**
+     * serialize and base64 on the last item of $delRow
+     */
+    public static function delEncode( array $delRow ): string {
+        
+        return base64_encode(serialize(array_slice($delRow, -1, 1)));
+    }
+    
+    
+    public static function delDecode( string $delEncoded ):bool|array {
+    
+        $decoded = base64_decode($delEncoded);
+        
+        //I don't like to block notices with @, but I check on the result anyway.
+        $row = @unserialize($decoded) ?? false;
+        
+        if (!$row || !is_array($row)){
+            
+            return false;
+        }
+        
+        return $row;
+    }
+
+    
+    public static function deleteFile(string $path):void
+    {
+
+        if (is_file($path)) {
+
+            unlink($path);
+        }
     }
 }

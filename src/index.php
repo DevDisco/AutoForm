@@ -4,7 +4,16 @@ $navbar = new Navigation($config);
 $editor = new Editor($database);
 
 $editor->setPrefill();
-$formHtml = $form->createForm();
+
+if (empty(Session::getPrefill()) ){
+    
+    $formHtml = $form->createForm();
+}
+else{
+
+    $formHtml = $form->createForm( "update" );
+}
+
 
 $editTable = $editor->showAll();
 

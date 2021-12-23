@@ -4,7 +4,7 @@
             <fieldset id="upload-{{id}}" class="{{class_input}}" {{disabled}}>
                 <input id="max-{{id}}" type="hidden" name="MAX_FILE_SIZE" value="{{maxfilesize}}" />
                 <input type="hidden" name="prefill_{{id}}" value="{{value}}" />
-                <input onchange="checkUpload(event)" class="form-control" type="file" name="{{name}}" accept="{{accept}}" title="{{instructions}}" data-width="{{width}}" data-heigth="{{heigth}}" {{required}}>
+                <input onchange="checkUpload(event)" id="{{id}}" class="form-control" type="file" name="{{name}}" accept="{{accept}}" title="{{instructions}}" data-width="{{width}}" data-heigth="{{heigth}}" {{required}}>
                 <div class="custom-feedback">
                     Sorry, this file is too large. {{instructions}}
                 </div>

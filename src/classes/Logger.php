@@ -3,49 +3,49 @@
 class Logger
 {
 
-    public function __construct(private string $projectDir="", private string $logfile="")
+    public function __construct(private string $projectDir = "", private string $logfile = "")
     {
     }
-    
+
     //prints a preformatted var_dump of $var, 
     //prefixed with $description
-    static function printVariable(string $description, mixed $var): void{
-    
+    static function printVariable(string $description, mixed $var): void
+    {
+
         print "<pre>";
         print $description . ": ";
         var_dump($var);
         print "</pre>";
     }
 
-    static function toLog(mixed $var, string $description="Logger"): void
+    static function toLog(mixed $var, string $description = "Logger"): void
     {
         $backtrace = debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT, 1);
 
-        $GLOBALS['logger'][] = [$description=>$var, 'trace'=> $backtrace];
+        $GLOBALS['logger'][] = [$description => $var, 'trace' => $backtrace];
     }
 
     static function printLog(bool $debug = true): void
     {
-        
-        if(!isset($GLOBALS['logger']) || !$debug){
+        if (!isset($GLOBALS['logger']) || !$debug) {
             return;
         }
-        
+
         $logged = $GLOBALS['logger'];
 
         print "<pre>";
-        foreach ($logged as $entry ) {
+        foreach ($logged as $entry) {
             $key = key($entry);
-            print $key ."\n". $entry['trace'][0]['file'].":". $entry['trace'][0]['line']."\n";
+            print $key . "\n" . $entry['trace'][0]['file'] . ":" . $entry['trace'][0]['line'] . "\n";
             print_r($entry[$key]);
             print "\n";
         }
         print "</pre>";
-        
+
         unset($GLOBALS['logger']);
     }
 
-    public function getLogfilePath():string|false
+    public function getLogfilePath(): string|false
     {
         return realpath($this->projectDir . $this->logfile);
     }

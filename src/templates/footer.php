@@ -31,10 +31,9 @@
 
         const fileInput = event.target;
         const fileSizeInputId = "max-" + fileInput.id;
+        console.log(document.getElementById(fileSizeInputId));
         const maxFileSize = document.getElementById(fileSizeInputId).value;
         const instructionsDiv = getNextSibling(fileInput, ".custom-feedback");
-
-        console.log("upload_check", instructionsDiv);
 
         if (fileInput.files[0].size > maxFileSize) {
 
@@ -57,33 +56,33 @@
         }
 
         form.classList.add("was-validated");
-
-        console.log(form);
     }
 
-    // Example starter JavaScript for disabling form submissions if there are invalid fields
-    // (function() {
-    //     "use strict";
+    function confirmDelete(t, id, encoded) {
 
-    //     // Fetch all the forms we want to apply custom Bootstrap validation styles to
-    //     var forms = document.querySelectorAll(".needs-validation");
+        if (confirm("Are you sure you want to delete this record?") === true) {
 
-    //     // Loop over them and prevent submission
-    //     Array.prototype.slice.call(forms).forEach(function(form) {
-    //         form.addEventListener(
-    //             "submit",
-    //             function(event) {
-    //                 if (!form.checkValidity()) {
-    //                     event.preventDefault();
-    //                     event.stopPropagation();
-    //                 }
+            window.location = "process.php?t=" + t + "&id=" + id + "&d=" + encoded;
+        }
+    }
 
-    //                 form.classList.add("was-validated");
-    //             },
-    //             false
-    //         );
-    //     });
-    // })();
+    // GET THE IMAGE WIDTH AND HEIGHT USING fileReader() API.
+    function readImageFile(file) {
+        var reader = new FileReader(); // CREATE AN NEW INSTANCE.
+
+        reader.onload = function(e) {
+            var img = new Image();
+            img.src = e.target.result;
+
+            img.onload = function() {
+                var w = this.width;
+                var h = this.height;
+
+                console.log(w, h);
+            }
+        };
+        reader.readAsDataURL(file);
+    }
 </script>
 </body>
 
